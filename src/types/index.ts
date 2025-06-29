@@ -7,7 +7,7 @@ export interface Trip {
 }
 
 export interface ItineraryItem {
-  id: string;
+  id:string;
   day: number;
   location: string;
   activity: string;
@@ -23,4 +23,13 @@ export interface GearItem {
   name: string;
   status: "Pending" | "Packed";
   assignedTo: string; // Participant ID
+}
+
+export type ContactType = "Rescue" | "Local Authority" | "Embassy" | "Guide";
+
+export interface EmergencyContact {
+  id: string;
+  name: string;
+  contactNumber: string;
+  type: ContactType;
 }
