@@ -1,29 +1,31 @@
 import { Button } from "@/components/ui/button";
-import { TripCard } from "@/components/TripCard";
-import { Plus } from "lucide-react";
-import { trips } from "@/data/trips";
+import { Mountain } from "lucide-react";
 import { Link } from "react-router-dom";
+import { MadeWithDyad } from "@/components/made-with-dyad";
 
 const Index = () => {
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <header className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold">Upcoming Trips</h1>
-        <Button asChild>
-          <Link to="/auth">
-            <Plus className="mr-2 h-4 w-4" />
-            New Trip
-          </Link>
-        </Button>
-      </header>
-
-      <main>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {trips.map((trip) => (
-            <TripCard key={trip.id} trip={trip} />
-          ))}
+    <div className="flex flex-col min-h-screen">
+      <main className="flex-grow flex items-center justify-center p-4">
+        <div className="text-center space-y-8">
+          <div className="inline-block p-6 bg-primary/10 rounded-full">
+            <Mountain className="h-16 w-16 text-primary" />
+          </div>
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tighter">
+            Plan. Pack. Conquer.
+          </h1>
+          <p className="max-w-2xl mx-auto text-lg text-muted-foreground">
+            Your ultimate adventure companion. Organize itineraries, manage
+            gear, and collaborate with your team seamlessly.
+          </p>
+          <Button asChild size="lg">
+            <Link to="/dashboard">Get Started</Link>
+          </Button>
         </div>
       </main>
+      <footer className="p-4">
+        <MadeWithDyad />
+      </footer>
     </div>
   );
 };
