@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { MapPin } from "lucide-react";
 import { format } from "date-fns";
+import { Link } from "react-router-dom";
 
 interface TripCardProps {
   trip: Trip;
@@ -34,7 +35,9 @@ export const TripCard = ({ trip }: TripCardProps) => {
         </div>
       </CardContent>
       <CardFooter>
-        <Button className="w-full">View Trip</Button>
+        <Button asChild className="w-full">
+          <Link to={`/trip/${trip.id}`}>View Trip</Link>
+        </Button>
       </CardFooter>
     </Card>
   );
