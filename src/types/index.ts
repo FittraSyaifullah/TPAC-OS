@@ -5,3 +5,10 @@ export interface Trip {
   endDate: Date;
   location: string;
 }
+
+export interface ItineraryItem {
+  id: string;
+  day: number;
+  location: string;
+  activity: string;
+}
