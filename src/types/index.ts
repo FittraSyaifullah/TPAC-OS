@@ -12,3 +12,15 @@ export interface ItineraryItem {
   location: string;
   activity: string;
 }
+
+export interface Participant {
+  id: string;
+  name: string;
+}
+
+export interface GearItem {
+  id: string;
+  name: string;
+  status: "Pending" | "Packed";
+  assignedTo: string; // Participant ID
+}
