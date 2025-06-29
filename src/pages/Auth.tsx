@@ -10,11 +10,25 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MountainSnow } from "lucide-react";
-import { GoogleIcon } from "@/components/icons/GoogleIcon";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/components/AuthProvider";
+import { useNavigate } from "react-router-dom";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 
 const AuthPage = () => {
   const [isSignUp, setIsSignUp] = useState(false);
+  const { session, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && session) {
+      navigate("/dashboard");
+    }
+  }, [session, loading, navigate]);
+
+  if (loading || session) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
@@ -33,10 +47,7 @@ const AuthPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <Button variant="outline" className="w-full">
-            <GoogleIcon className="mr-2 h-5 w-5" />
-            Sign {isSignUp ? "up" : "in"} with Google
-          </Button>
+          <GoogleSignInButton isSignUp={isSignUp} />
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
