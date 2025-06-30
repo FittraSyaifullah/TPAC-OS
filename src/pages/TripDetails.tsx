@@ -1,6 +1,6 @@
 import { Link, useParams, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, Package, MapPin, Pencil } from "lucide-react";
+import { ArrowLeft, Users, Package, MapPin, Pencil, Download } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SummaryWidget } from "@/components/SummaryWidget";
@@ -11,6 +11,10 @@ import { EmergencyTab } from "@/components/EmergencyTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTripDetails } from "@/hooks/useTripDetails";
 import { Progress } from "@/components/ui/progress";
+import { useRef, useState } from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import PrintableTripReport from "@/components/PrintableTripReport";
 
 const TripDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +37,41 @@ const TripDetails = () => {
     updateEmergencyContact,
     removeEmergencyContact,
   } = useTripDetails(id);
+
+  const printRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (!printRef.current || !trip) return;
+    setIsExporting(true);
+
+    const canvas = await html2canvas(printRef.current, { scale: 2 });
+    const imgData = canvas.toDataURL('image/png');
+    
+    const pdf = new jsPDF({
+      orientation: 'p',
+      unit: 'px',
+      format: 'a4',
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+    heightLeft -= pdf.internal.pageSize.getHeight();
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdf.internal.pageSize.getHeight();
+    }
+    
+    pdf.save(`${trip.title.replace(/ /g, '_')}-report.pdf`);
+    setIsExporting(false);
+  };
 
   if (loading) {
     return (
@@ -71,12 +110,18 @@ const TripDetails = () => {
               Back to Dashboard
             </Link>
           </Button>
-          <Button asChild variant="outline">
-            <Link to={`/trip/${trip.id}/edit`}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit Trip
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <Link to={`/trip/${trip.id}/edit`}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit Trip
+              </Link>
+            </Button>
+            <Button onClick={handleExport} disabled={isExporting}>
+              <Download className="mr-2 h-4 w-4" />
+              {isExporting ? 'Exporting...' : 'Export PDF'}
+            </Button>
+          </div>
         </div>
         <h1 className="text-3xl md:text-4xl font-bold">{trip.title}</h1>
         <div className="text-lg text-muted-foreground mt-2">
@@ -150,6 +195,18 @@ const TripDetails = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Hidden component for printing */}
+      <div className="absolute -left-[9999px] top-auto w-[794px]">
+        <PrintableTripReport
+          ref={printRef}
+          trip={trip}
+          participants={participants}
+          itinerary={itinerary}
+          gearItems={gearItems}
+          emergencyContacts={emergencyContacts}
+        />
+      </div>
     </div>
   );
 };
