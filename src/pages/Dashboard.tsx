@@ -3,15 +3,14 @@ import { TripCard } from "@/components/TripCard";
 import { Plus, Calendar, Users, Package, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
-import { Trip } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
-import { Skeleton } from "@/components/ui/skeleton";
 import { SummaryWidget } from "@/components/SummaryWidget";
 import { EmptyState } from "@/components/EmptyState";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DashboardLoadingSkeleton } from "@/components/DashboardLoadingSkeleton";
 
 const Dashboard = () => {
   const { upcomingTrips, pastTrips, loading, removeTrip } = useDashboardData();
@@ -54,44 +53,9 @@ const Dashboard = () => {
     }
   };
 
-  const renderContent = () => {
-    if (loading) {
-      return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-64 w-full" />
-          ))}
-        </div>
-      );
-    }
-
-    if (filteredTrips.length === 0) {
-      if (searchTerm) {
-        return (
-          <EmptyState
-            icon={<Search className="h-8 w-8 text-muted-foreground" />}
-            title="No trips found"
-            description="Try adjusting your search term."
-          />
-        );
-      }
-      return (
-        <EmptyState
-          icon={<Calendar className="h-8 w-8 text-muted-foreground" />}
-          title={activeTab === 'upcoming' ? "No upcoming trips" : "No past trips"}
-          description={activeTab === 'upcoming' ? "Plan a new adventure to see it here." : "Completed trips will appear here."}
-        />
-      );
-    }
-
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTrips.map((trip) => (
-          <TripCard key={trip.id} trip={trip} onDelete={handleDeleteTrip} />
-        ))}
-      </div>
-    );
-  };
+  if (loading) {
+    return <DashboardLoadingSkeleton />;
+  }
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -118,30 +82,28 @@ const Dashboard = () => {
       </header>
 
       <main>
-        {!loading && (
-          <section className="mb-8 grid gap-4 md:grid-cols-3">
-            <SummaryWidget
-              title="Trips"
-              icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
-            >
-              <div className="text-2xl font-bold">{filteredTrips.length}</div>
-            </SummaryWidget>
-            <SummaryWidget
-              title="Participants"
-              icon={<Users className="h-4 w-4 text-muted-foreground" />}
-            >
-              <div className="text-2xl font-bold">
-                {stats.totalParticipants}
-              </div>
-            </SummaryWidget>
-            <SummaryWidget
-              title="Total Gear Items"
-              icon={<Package className="h-4 w-4 text-muted-foreground" />}
-            >
-              <div className="text-2xl font-bold">{stats.totalGearItems}</div>
-            </SummaryWidget>
-          </section>
-        )}
+        <section className="mb-8 grid gap-4 md:grid-cols-3">
+          <SummaryWidget
+            title="Trips"
+            icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
+          >
+            <div className="text-2xl font-bold">{filteredTrips.length}</div>
+          </SummaryWidget>
+          <SummaryWidget
+            title="Participants"
+            icon={<Users className="h-4 w-4 text-muted-foreground" />}
+          >
+            <div className="text-2xl font-bold">
+              {stats.totalParticipants}
+            </div>
+          </SummaryWidget>
+          <SummaryWidget
+            title="Total Gear Items"
+            icon={<Package className="h-4 w-4 text-muted-foreground" />}
+          >
+            <div className="text-2xl font-bold">{stats.totalGearItems}</div>
+          </SummaryWidget>
+        </section>
 
         <Tabs defaultValue="upcoming" onValueChange={(value) => setActiveTab(value as 'upcoming' | 'past')}>
           <TabsList className="mb-4">
@@ -150,7 +112,27 @@ const Dashboard = () => {
           </TabsList>
         </Tabs>
         
-        {renderContent()}
+        {filteredTrips.length === 0 ? (
+          searchTerm ? (
+            <EmptyState
+              icon={<Search className="h-8 w-8 text-muted-foreground" />}
+              title="No trips found"
+              description="Try adjusting your search term."
+            />
+          ) : (
+            <EmptyState
+              icon={<Calendar className="h-8 w-8 text-muted-foreground" />}
+              title={activeTab === 'upcoming' ? "No upcoming trips" : "No past trips"}
+              description={activeTab === 'upcoming' ? "Plan a new adventure to see it here." : "Completed trips will appear here."}
+            />
+          )
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredTrips.map((trip) => (
+              <TripCard key={trip.id} trip={trip} onDelete={handleDeleteTrip} />
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
