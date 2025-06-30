@@ -36,11 +36,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Package } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Skeleton } from "./ui/skeleton";
+import { EmptyState } from "./EmptyState";
 
 interface GearTabProps {
   tripId: string;
@@ -120,7 +121,6 @@ export const GearTab = ({
       showSuccess("Item added.");
     } catch (error: any) {
       showError("Failed to add item.");
-      console.error("Error adding item:", error);
     }
   };
 
@@ -143,7 +143,6 @@ export const GearTab = ({
       );
     } catch (error: any) {
       showError("Failed to update item.");
-      console.error("Error updating item:", error);
     }
   };
 
@@ -160,7 +159,6 @@ export const GearTab = ({
       showSuccess("Item removed.");
     } catch (error: any) {
       showError("Failed to remove item.");
-      console.error("Error removing item:", error);
     }
   };
 
@@ -228,10 +226,18 @@ export const GearTab = ({
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-12 w-full" />
           </div>
-        ) : isMobile ? (
-          <MobileGearList {...gearListProps} />
+        ) : gearItems.length > 0 ? (
+          isMobile ? (
+            <MobileGearList {...gearListProps} />
+          ) : (
+            <DesktopGearList {...gearListProps} />
+          )
         ) : (
-          <DesktopGearList {...gearListProps} />
+          <EmptyState
+            icon={<Package className="h-8 w-8 text-muted-foreground" />}
+            title="No gear added"
+            description="Add your first item to the checklist."
+          />
         )}
       </CardContent>
     </Card>
@@ -254,7 +260,6 @@ const AssigneeSelect = ({ value, onValueChange, participants }: any) => (
   </Select>
 );
 
-// Desktop View
 const DesktopGearList = ({
   gearItems,
   participants,
@@ -312,7 +317,6 @@ const DesktopGearList = ({
   </Table>
 );
 
-// Mobile View
 const MobileGearList = ({
   gearItems,
   participants,

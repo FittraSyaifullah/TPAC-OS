@@ -28,10 +28,12 @@ import {
   Building,
   Flag,
   User,
+  ShieldAlert,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Skeleton } from "./ui/skeleton";
+import { EmptyState } from "./EmptyState";
 
 const contactTypeIcons: Record<ContactType, React.ReactNode> = {
   Rescue: <Shield className="h-5 w-5 text-red-500" />,
@@ -67,7 +69,6 @@ export const EmergencyTab = ({ tripId }: EmergencyTabProps) => {
         setContacts(data as EmergencyContact[]);
       } catch (error: any) {
         showError("Failed to fetch emergency contacts.");
-        console.error("Error fetching contacts:", error);
       } finally {
         setLoading(false);
       }
@@ -78,7 +79,6 @@ export const EmergencyTab = ({ tripId }: EmergencyTabProps) => {
   const handleSave = async (formData: Omit<EmergencyContact, "id" | "trip_id">) => {
     try {
       if (editingContact) {
-        // Update existing contact
         const { data, error } = await supabase
           .from("emergency_contacts")
           .update(formData)
@@ -91,7 +91,6 @@ export const EmergencyTab = ({ tripId }: EmergencyTabProps) => {
         );
         showSuccess("Contact updated.");
       } else {
-        // Add new contact
         const { data, error } = await supabase
           .from("emergency_contacts")
           .insert({ ...formData, trip_id: tripId })
@@ -160,7 +159,7 @@ export const EmergencyTab = ({ tripId }: EmergencyTabProps) => {
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-full" />
           </div>
-        ) : (
+        ) : contacts.length > 0 ? (
           <div className="space-y-4">
             {contacts.map((contact) => (
               <div
@@ -196,13 +195,18 @@ export const EmergencyTab = ({ tripId }: EmergencyTabProps) => {
               </div>
             ))}
           </div>
+        ) : (
+          <EmptyState
+            icon={<ShieldAlert className="h-8 w-8 text-muted-foreground" />}
+            title="No emergency contacts"
+            description="Add your first contact for safety."
+          />
         )}
       </CardContent>
     </Card>
   );
 };
 
-// Contact Form Sub-component
 interface ContactFormProps {
   onSubmit: (data: Omit<EmergencyContact, "id" | "trip_id">) => void;
   initialData?: EmergencyContact | null;
@@ -211,7 +215,9 @@ interface ContactFormProps {
 
 const ContactForm = ({ onSubmit, initialData, onClose }: ContactFormProps) => {
   const [name, setName] = useState(initialData?.name || "");
-  const [contactNumber, setContactNumber] = useState(initialData?.contact_number || "");
+  const [contactNumber, setContactNumber] = useState(
+    initialData?.contact_number || "",
+  );
   const [type, setType] = useState<ContactType>(initialData?.type || "Guide");
 
   const handleSubmit = (e: React.FormEvent) => {

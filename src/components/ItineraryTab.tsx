@@ -10,10 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ItineraryItem } from "@/types";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Skeleton } from "./ui/skeleton";
+import { EmptyState } from "./EmptyState";
 
 interface ItineraryTabProps {
   tripId: string;
@@ -88,7 +89,6 @@ export const ItineraryTab = ({ tripId }: ItineraryTabProps) => {
     field: "location" | "activity",
     value: string,
   ) => {
-    // Optimistic UI update
     const originalItinerary = [...itinerary];
     const updatedItinerary = itinerary.map((item) =>
       item.id === id ? { ...item, [field]: value } : item,
@@ -101,7 +101,6 @@ export const ItineraryTab = ({ tripId }: ItineraryTabProps) => {
         .update({ [field]: value })
         .eq("id", id);
       if (error) {
-        // Revert on error
         setItinerary(originalItinerary);
         throw error;
       }
@@ -132,67 +131,75 @@ export const ItineraryTab = ({ tripId }: ItineraryTabProps) => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <Accordion
-            type="multiple"
-            className="w-full"
-            defaultValue={itinerary.length > 0 ? [itinerary[0].id] : []}
-          >
-            {itinerary.map((item) => (
-              <AccordionItem key={item.id} value={item.id}>
-                <AccordionTrigger>
-                  <span className="font-semibold text-left">
-                    Day {item.day}: {item.location || "New Location"}
-                  </span>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4 p-2">
-                    <div>
-                      <label
-                        htmlFor={`location-${item.id}`}
-                        className="block text-sm font-medium mb-1"
+          {itinerary.length > 0 ? (
+            <Accordion
+              type="multiple"
+              className="w-full"
+              defaultValue={itinerary.length > 0 ? [itinerary[0].id] : []}
+            >
+              {itinerary.map((item) => (
+                <AccordionItem key={item.id} value={item.id}>
+                  <AccordionTrigger>
+                    <span className="font-semibold text-left">
+                      Day {item.day}: {item.location || "New Location"}
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4 p-2">
+                      <div>
+                        <label
+                          htmlFor={`location-${item.id}`}
+                          className="block text-sm font-medium mb-1"
+                        >
+                          Location
+                        </label>
+                        <Input
+                          id={`location-${item.id}`}
+                          value={item.location}
+                          onChange={(e) =>
+                            handleUpdateDay(item.id, "location", e.target.value)
+                          }
+                          placeholder="e.g., City, Landmark"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor={`activity-${item.id}`}
+                          className="block text-sm font-medium mb-1"
+                        >
+                          Activity
+                        </label>
+                        <Textarea
+                          id={`activity-${item.id}`}
+                          value={item.activity}
+                          onChange={(e) =>
+                            handleUpdateDay(item.id, "activity", e.target.value)
+                          }
+                          placeholder="Describe the day's activities..."
+                          rows={4}
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRemoveDay(item.id)}
+                        className="mt-2"
                       >
-                        Location
-                      </label>
-                      <Input
-                        id={`location-${item.id}`}
-                        value={item.location}
-                        onChange={(e) =>
-                          handleUpdateDay(item.id, "location", e.target.value)
-                        }
-                        placeholder="e.g., City, Landmark"
-                      />
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Remove Day {item.day}
+                      </Button>
                     </div>
-                    <div>
-                      <label
-                        htmlFor={`activity-${item.id}`}
-                        className="block text-sm font-medium mb-1"
-                      >
-                        Activity
-                      </label>
-                      <Textarea
-                        id={`activity-${item.id}`}
-                        value={item.activity}
-                        onChange={(e) =>
-                          handleUpdateDay(item.id, "activity", e.target.value)
-                        }
-                        placeholder="Describe the day's activities..."
-                        rows={4}
-                      />
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleRemoveDay(item.id)}
-                      className="mt-2"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Remove Day {item.day}
-                    </Button>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          ) : (
+            <EmptyState
+              icon={<CalendarDays className="h-8 w-8 text-muted-foreground" />}
+              title="No itinerary yet"
+              description="Add the first day to start planning your schedule."
+            />
+          )}
           <Button onClick={handleAddDay}>
             <Plus className="mr-2 h-4 w-4" />
             Add Day
