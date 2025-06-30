@@ -1,12 +1,171 @@
+import { useEffect, useState } from "react";
+import { Participant } from "@/types";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Plus, Trash2, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { showError, showSuccess } from "@/utils/toast";
+import { Skeleton } from "./ui/skeleton";
 
-export const ParticipantsTab = () => (
-  <Card>
-    <CardHeader>
-      <CardTitle>Participants</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <p>List of trip participants will be displayed here.</p>
-    </CardContent>
-  </Card>
-);
+interface ParticipantsTabProps {
+  tripId: string;
+  onParticipantsChange: (count: number) => void;
+}
+
+export const ParticipantsTab = ({ tripId, onParticipantsChange }: ParticipantsTabProps) => {
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newParticipantName, setNewParticipantName] = useState("");
+
+  useEffect(() => {
+    const fetchParticipants = async () => {
+      if (!tripId) return;
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("trip_participants")
+          .select("id, name")
+          .eq("trip_id", tripId)
+          .order("created_at", { ascending: true });
+
+        if (error) throw error;
+        setParticipants(data as Participant[]);
+      } catch (error: any) {
+        showError("Failed to fetch participants.");
+        console.error("Error fetching participants:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchParticipants();
+  }, [tripId]);
+
+  useEffect(() => {
+    onParticipantsChange(participants.length);
+  }, [participants, onParticipantsChange]);
+
+  const handleAddParticipant = async () => {
+    if (!newParticipantName.trim()) return;
+    const newParticipant: Omit<Participant, "id"> = {
+      name: newParticipantName.trim(),
+      trip_id: tripId,
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from("trip_participants")
+        .insert(newParticipant)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setParticipants([...participants, data as Participant]);
+      setNewParticipantName("");
+      setIsAddDialogOpen(false);
+      showSuccess("Participant added.");
+    } catch (error: any) {
+      showError("Failed to add participant.");
+      console.error("Error adding participant:", error);
+    }
+  };
+
+  const handleRemoveParticipant = async (id: string) => {
+    try {
+      const { error } = await supabase.from("trip_participants").delete().eq("id", id);
+      if (error) throw error;
+      setParticipants(participants.filter((p) => p.id !== id));
+      showSuccess("Participant removed.");
+    } catch (error: any) {
+      showError("Failed to remove participant.");
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Participants</CardTitle>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Participant
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Participant</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Name
+                </Label>
+                <Input
+                  id="name"
+                  value={newParticipantName}
+                  onChange={(e) => setNewParticipantName(e.target.value)}
+                  className="col-span-3"
+                  placeholder="e.g., Alex Smith"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button onClick={handleAddParticipant}>Add Participant</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        ) : participants.length > 0 ? (
+          <div className="space-y-4">
+            {participants.map((participant) => (
+              <div
+                key={participant.id}
+                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+              >
+                <div className="flex items-center gap-4">
+                  <User className="h-5 w-5 text-muted-foreground" />
+                  <p className="font-semibold">{participant.name}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleRemoveParticipant(participant.id)}
+                  className="text-red-500 hover:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-muted-foreground py-8">
+            No participants added yet.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};

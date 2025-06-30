@@ -17,6 +17,7 @@ export interface ItineraryItem {
 export interface Participant {
   id: string;
   name: string;
+  trip_id?: string;
 }
 
 export interface GearItem {

@@ -19,6 +19,7 @@ const TripDetails = () => {
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
   const [gearCounts, setGearCounts] = useState({ packed: 0, total: 0 });
+  const [participantCount, setParticipantCount] = useState(0);
 
   useEffect(() => {
     const fetchTrip = async () => {
@@ -104,7 +105,7 @@ const TripDetails = () => {
         <section className="grid gap-4 md:grid-cols-2">
           <SummaryWidget
             title="Participants"
-            value="12"
+            value={participantCount}
             icon={<Users className="h-4 w-4 text-muted-foreground" />}
           />
           <SummaryWidget
@@ -128,7 +129,7 @@ const TripDetails = () => {
             <GearTab tripId={trip.id} onCountsChange={setGearCounts} />
           </TabsContent>
           <TabsContent value="participants" className="mt-4">
-            <ParticipantsTab />
+            <ParticipantsTab tripId={trip.id} onParticipantsChange={setParticipantCount} />
           </TabsContent>
           <TabsContent value="emergency" className="mt-4">
             <EmergencyTab />
