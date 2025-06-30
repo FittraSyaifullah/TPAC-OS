@@ -100,18 +100,6 @@ export const ItineraryTab = ({
     setLocalItinerary(itinerary);
   }, [itinerary]);
 
-  const handleInputChange = (
-    id: string,
-    field: "location" | "activity",
-    value: string,
-  ) => {
-    setLocalItinerary((currentItinerary) =>
-      currentItinerary.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item,
-      ),
-    );
-  };
-
   return (
     <Card>
       <CardHeader>
