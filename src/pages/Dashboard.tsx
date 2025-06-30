@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SummaryWidget } from "@/components/SummaryWidget";
+import { EmptyState } from "@/components/EmptyState";
 
 const Dashboard = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -135,12 +136,11 @@ const Dashboard = () => {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                <h2 className="text-xl font-semibold">No trips yet!</h2>
-                <p className="text-muted-foreground mt-2">
-                  Click "New Trip" to plan your first adventure.
-                </p>
-              </div>
+              <EmptyState
+                icon={<Calendar className="h-8 w-8 text-muted-foreground" />}
+                title="No trips yet!"
+                description="Click 'New Trip' to plan your first adventure."
+              />
             )}
           </>
         )}

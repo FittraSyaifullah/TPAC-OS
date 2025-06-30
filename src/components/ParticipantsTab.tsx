@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Participant } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,10 +13,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, User } from "lucide-react";
+import { Plus, Trash2, User, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Skeleton } from "./ui/skeleton";
+import { EmptyState } from "./EmptyState";
 
 interface ParticipantsTabProps {
   tripId: string;
@@ -34,6 +35,10 @@ export const ParticipantsTab = ({
   const [participants, setParticipants] = useState<Participant[]>(initialParticipants);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newParticipantName, setNewParticipantName] = useState("");
+
+  useEffect(() => {
+    setParticipants(initialParticipants);
+  }, [initialParticipants]);
 
   const handleAddParticipant = async () => {
     if (!newParticipantName.trim()) return;
@@ -145,9 +150,11 @@ export const ParticipantsTab = ({
             ))}
           </div>
         ) : (
-          <p className="text-center text-muted-foreground py-8">
-            No participants added yet.
-          </p>
+          <EmptyState
+            icon={<Users className="h-8 w-8 text-muted-foreground" />}
+            title="No participants yet"
+            description="Add the first participant to your trip."
+          />
         )}
       </CardContent>
     </Card>
