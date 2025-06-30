@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Trash2 } from "lucide-react";
+import { MapPin, Trash2, Users } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { Progress } from "./ui/progress";
@@ -45,13 +45,17 @@ export const TripCard = ({ trip, onDelete }: TripCardProps) => {
           {formattedStartDate} - {formattedEndDate}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow">
+      <CardContent className="flex-grow space-y-4">
         <div className="flex items-center text-sm text-muted-foreground">
           <MapPin className="mr-2 h-4 w-4" />
           <span>{trip.location}</span>
         </div>
+        <div className="flex items-center text-sm text-muted-foreground">
+          <Users className="mr-2 h-4 w-4" />
+          <span>{trip.participant_count} Participants</span>
+        </div>
         {gearTotal > 0 && (
-          <div className="mt-4">
+          <div>
             <div className="flex justify-between items-center mb-1 text-sm">
               <span className="text-muted-foreground">Packing Progress</span>
               <span>{gearPacked} / {gearTotal}</span>

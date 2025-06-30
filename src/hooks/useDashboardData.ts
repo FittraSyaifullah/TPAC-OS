@@ -14,22 +14,12 @@ export const useDashboardData = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [tripsRes, participantsRes, gearRes] = await Promise.all([
-        supabase.rpc('get_trips_with_gear_stats'),
-        supabase
-          .from("trip_participants")
-          .select("id", { count: "exact", head: true }),
-        supabase
-          .from("trip_gear_items")
-          .select("id", { count: "exact", head: true }),
-      ]);
+      const { data, error } = await supabase.rpc('get_upcoming_trips_with_stats');
 
-      if (tripsRes.error) throw tripsRes.error;
-      if (participantsRes.error) throw participantsRes.error;
-      if (gearRes.error) throw gearRes.error;
+      if (error) throw error;
 
-      if (tripsRes.data) {
-        const formattedTrips: Trip[] = tripsRes.data.map((event: any) => ({
+      if (data) {
+        const formattedTrips: Trip[] = data.map((event: any) => ({
           id: event.id,
           title: event.title,
           startDate: new Date(event.date),
@@ -37,14 +27,18 @@ export const useDashboardData = () => {
           location: event.location,
           gear_total: event.gear_total,
           gear_packed: event.gear_packed,
+          participant_count: event.participant_count,
         }));
         setTrips(formattedTrips);
-      }
 
-      setStats({
-        totalParticipants: participantsRes.count ?? 0,
-        totalGearItems: gearRes.count ?? 0,
-      });
+        const totalParticipants = formattedTrips.reduce((sum, trip) => sum + (trip.participant_count || 0), 0);
+        const totalGearItems = formattedTrips.reduce((sum, trip) => sum + (trip.gear_total || 0), 0);
+
+        setStats({
+          totalParticipants,
+          totalGearItems,
+        });
+      }
     } catch (error: any) {
       showError("Failed to fetch dashboard data.");
       console.error("Error fetching data:", error);

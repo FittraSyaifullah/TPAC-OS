@@ -6,6 +6,7 @@ export interface Trip {
   location: string;
   gear_total?: number;
   gear_packed?: number;
+  participant_count?: number;
 }
 
 export interface ItineraryItem {
