@@ -50,6 +50,19 @@ interface GearTabProps {
   onRemoveItem: (id: string) => void;
 }
 
+interface GearListProps {
+  gearItems: GearItem[];
+  participants: Participant[];
+  handleUpdate: (id: string, updates: Partial<GearItem>) => void;
+  handleRemoveItem: (id: string) => void;
+}
+
+interface AssigneeSelectProps {
+  value: string;
+  onValueChange: (value: string) => void;
+  participants: Participant[];
+}
+
 export const GearTab = ({
   gearItems,
   participants,
@@ -73,7 +86,7 @@ export const GearTab = ({
   ).length;
   const totalCount = gearItems.length;
 
-  const gearListProps = {
+  const gearListProps: GearListProps = {
     gearItems,
     participants,
     handleUpdate: onUpdateItem,
@@ -144,7 +157,7 @@ export const GearTab = ({
   );
 };
 
-const AssigneeSelect = ({ value, onValueChange, participants }: any) => (
+const AssigneeSelect = ({ value, onValueChange, participants }: AssigneeSelectProps) => (
   <Select value={value} onValueChange={onValueChange}>
     <SelectTrigger>
       <SelectValue placeholder="Assign..." />
@@ -179,7 +192,7 @@ const DesktopGearList = ({
   participants,
   handleUpdate,
   handleRemoveItem,
-}: any) => (
+}: GearListProps) => (
   <Table>
     <TableHeader>
       <TableRow>
@@ -236,7 +249,7 @@ const MobileGearList = ({
   participants,
   handleUpdate,
   handleRemoveItem,
-}: any) => (
+}: GearListProps) => (
   <div className="space-y-4">
     {gearItems.map((item: GearItem) => (
       <Card key={item.id}>
