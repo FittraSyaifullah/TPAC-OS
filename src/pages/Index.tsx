@@ -1,86 +1,113 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { MountainSnow } from "lucide-react";
-import { showError } from "@/utils/toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MadeWithDyad } from "@/components/made-with-dyad";
+import {
+  MountainSnow,
+  Map,
+  Package,
+  Users,
+  ShieldCheck,
+  ArrowRight,
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
-const ACCESS_CODE = "123456";
+const features = [
+  {
+    icon: <Map className="h-8 w-8 text-primary" />,
+    title: "Dynamic Itineraries",
+    description: "Plan your trip day-by-day with an interactive itinerary builder.",
+  },
+  {
+    icon: <Package className="h-8 w-8 text-primary" />,
+    title: "Gear Checklists",
+    description: "Create and manage comprehensive gear lists to ensure you never forget a thing.",
+  },
+  {
+    icon: <Users className="h-8 w-8 text-primary" />,
+    title: "Participant Management",
+    description: "Keep track of all trip participants in one organized place.",
+  },
+  {
+    icon: <ShieldCheck className="h-8 w-8 text-primary" />,
+    title: "Emergency Contacts",
+    description: "Store crucial emergency contact information for peace of mind.",
+  },
+];
 
-const AccessCodePage = () => {
-  const navigate = useNavigate();
-  const [code, setCode] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    // If user is already authenticated, redirect to dashboard
-    if (sessionStorage.getItem("isAuthenticated")) {
-      navigate("/dashboard");
-    }
-  }, [navigate]);
-
-  const handleLogin = () => {
-    setIsSubmitting(true);
-    if (code === ACCESS_CODE) {
-      sessionStorage.setItem("isAuthenticated", "true");
-      navigate("/dashboard");
-    } else {
-      showError("Invalid access code. Please try again.");
-      setIsSubmitting(false);
-    }
-  };
-
+const Index = () => {
   return (
-    <div className="flex flex-col min-h-screen">
-      <main className="flex-grow flex items-center justify-center bg-muted/40 p-4">
-        <Card className="w-full max-w-sm">
-          <CardHeader className="text-center">
-            <div className="mb-4 flex justify-center">
-              <MountainSnow className="h-10 w-10" />
-            </div>
-            <CardTitle className="text-2xl font-bold tracking-tight">
-              Welcome to Trailstack
-            </CardTitle>
-            <CardDescription>
-              Please enter the access code to continue.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="access-code">Access Code</Label>
-              <Input
-                id="access-code"
-                type="password"
-                placeholder="******"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-              />
-            </div>
-            <Button
-              className="w-full"
-              onClick={handleLogin}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Verifying..." : "Enter"}
+    <div className="flex flex-col min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 items-center justify-between">
+          <Link to="/" className="flex items-center space-x-2">
+            <MountainSnow className="h-6 w-6" />
+            <span className="font-bold text-lg">Trailstack</span>
+          </Link>
+          <Button asChild>
+            <Link to="/login">
+              Get Started <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-grow">
+        {/* Hero Section */}
+        <section className="py-20 md:py-32">
+          <div className="container text-center">
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4">
+              Plan Your Perfect Adventure
+            </h1>
+            <p className="max-w-2xl mx-auto text-lg text-muted-foreground mb-8">
+              Trailstack is the all-in-one platform to organize every detail of
+              your outdoor trips, from gear checklists to daily itineraries.
+            </p>
+            <Button size="lg" asChild>
+              <Link to="/login">
+                Enter Access Code
+              </Link>
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="py-20 bg-muted/40">
+          <div className="container">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold">Everything You Need to Plan</h2>
+              <p className="text-muted-foreground">
+                All the tools for a successful adventure.
+              </p>
+            </div>
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+              {features.map((feature, index) => (
+                <Card key={index} className="text-center">
+                  <CardHeader>
+                    <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit">
+                      {feature.icon}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <CardTitle className="mb-2">{feature.title}</CardTitle>
+                    <p className="text-muted-foreground">
+                      {feature.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
       </main>
-      <footer className="p-4 bg-muted/40">
+
+      {/* Footer */}
+      <footer className="p-4">
         <MadeWithDyad />
       </footer>
     </div>
   );
 };
 
-export default AccessCodePage;
+export default Index;

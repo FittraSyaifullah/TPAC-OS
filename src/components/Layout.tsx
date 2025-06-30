@@ -9,7 +9,7 @@ export const Layout = () => {
   useEffect(() => {
     const isAuthenticated = sessionStorage.getItem("isAuthenticated");
     if (!isAuthenticated) {
-      navigate("/");
+      navigate("/login");
     }
   }, [navigate]);
 

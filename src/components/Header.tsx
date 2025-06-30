@@ -7,7 +7,7 @@ export const Header = () => {
 
   const handleLogOff = () => {
     sessionStorage.removeItem("isAuthenticated");
-    navigate("/");
+    navigate("/login");
   };
 
   return (
