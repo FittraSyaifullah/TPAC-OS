@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { MountainSnow, LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { ThemeToggle } from "./ThemeToggle";
 
 export const Header = () => {
   const navigate = useNavigate();
@@ -17,11 +18,13 @@ export const Header = () => {
           <MountainSnow className="h-6 w-6" />
           <span className="font-bold">Trailstack</span>
         </Link>
-        <Button variant="outline" onClick={handleLogOff}>
-          <LogOut className="mr-2 h-4 w-4" />
-          Log Off
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button variant="outline" onClick={handleLogOff}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Log Off
+          </Button>
+        </div>
       </div>
     </header>
   );
-};
