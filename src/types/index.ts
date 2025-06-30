@@ -7,10 +7,12 @@ export interface Trip {
 }
 
 export interface ItineraryItem {
-  id:string;
+  id: string;
   day: number;
   location: string;
   activity: string;
+  trip_id?: string;
+  creator_id?: string;
 }
 
 export interface Participant {

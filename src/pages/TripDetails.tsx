@@ -122,11 +122,11 @@ const TripDetails = () => {
             <TabsTrigger value="emergency">Emergency</TabsTrigger>
           </TabsList>
           <TabsContent value="itinerary" className="mt-4">
-            <ItineraryTab />
+            <ItineraryTab tripId={trip.id} />
           </TabsContent>
           <TabsContent value="gear" className="mt-4">
             <GearTab tripId={trip.id} onCountsChange={setGearCounts} />
-          </TabsContent>
+          </Tabs-Content>
           <TabsContent value="participants" className="mt-4">
             <ParticipantsTab />
           </TabsContent>

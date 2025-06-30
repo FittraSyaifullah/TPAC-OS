@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -11,57 +11,123 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ItineraryItem } from "@/types";
 import { Plus, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./AuthProvider";
+import { showError, showSuccess } from "@/utils/toast";
+import { Skeleton } from "./ui/skeleton";
 
-const initialItinerary: ItineraryItem[] = [
-  {
-    id: "item-1",
-    day: 1,
-    location: "Kathmandu, Nepal",
-    activity:
-      "Arrive at Tribhuvan International Airport, transfer to hotel. Team briefing and gear check. Welcome dinner with the group.",
-  },
-  {
-    id: "item-2",
-    day: 2,
-    location: "Lukla to Phakding",
-    activity:
-      "Early morning scenic flight to Lukla (2,860m). Begin trek to Phakding (2,610m), a gentle 3-4 hour walk through villages and forests.",
-  },
-];
+interface ItineraryTabProps {
+  tripId: string;
+}
 
-export const ItineraryTab = () => {
-  const [itinerary, setItinerary] =
-    useState<ItineraryItem[]>(initialItinerary);
+export const ItineraryTab = ({ tripId }: ItineraryTabProps) => {
+  const { user } = useAuth();
+  const [itinerary, setItinerary] = useState<ItineraryItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleAddDay = () => {
+  useEffect(() => {
+    const fetchItinerary = async () => {
+      if (!tripId || !user) return;
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("itinerary_items")
+          .select("*")
+          .eq("trip_id", tripId)
+          .order("day", { ascending: true });
+
+        if (error) throw error;
+        setItinerary(data as ItineraryItem[]);
+      } catch (error: any) {
+        showError("Failed to fetch itinerary.");
+        console.error("Error fetching itinerary:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchItinerary();
+  }, [tripId, user]);
+
+  const handleAddDay = async () => {
+    if (!user) return;
     const newDayNumber =
       itinerary.length > 0
         ? Math.max(...itinerary.map((item) => item.day)) + 1
         : 1;
-    const newItem: ItineraryItem = {
-      id: `item-${Date.now()}`,
+    const newItem: Omit<ItineraryItem, "id"> = {
       day: newDayNumber,
       location: "",
       activity: "",
+      trip_id: tripId,
+      creator_id: user.id,
     };
-    setItinerary([...itinerary, newItem]);
+
+    try {
+      const { data, error } = await supabase
+        .from("itinerary_items")
+        .insert(newItem)
+        .select()
+        .single();
+      if (error) throw error;
+      setItinerary([...itinerary, data as ItineraryItem]);
+      showSuccess("New day added to itinerary.");
+    } catch (error: any) {
+      showError("Failed to add new day.");
+    }
   };
 
-  const handleRemoveDay = (id: string) => {
-    setItinerary(itinerary.filter((item) => item.id !== id));
+  const handleRemoveDay = async (id: string) => {
+    try {
+      const { error } = await supabase.from("itinerary_items").delete().eq("id", id);
+      if (error) throw error;
+      setItinerary(itinerary.filter((item) => item.id !== id));
+      showSuccess("Day removed from itinerary.");
+    } catch (error) {
+      showError("Failed to remove day.");
+    }
   };
 
-  const handleUpdateDay = (
+  const handleUpdateDay = async (
     id: string,
     field: "location" | "activity",
     value: string,
   ) => {
-    setItinerary(
-      itinerary.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item,
-      ),
+    // Optimistic UI update
+    const originalItinerary = [...itinerary];
+    const updatedItinerary = itinerary.map((item) =>
+      item.id === id ? { ...item, [field]: value } : item,
     );
+    setItinerary(updatedItinerary);
+
+    try {
+      const { error } = await supabase
+        .from("itinerary_items")
+        .update({ [field]: value })
+        .eq("id", id);
+      if (error) {
+        // Revert on error
+        setItinerary(originalItinerary);
+        throw error;
+      }
+    } catch (error) {
+      showError(`Failed to update ${field}.`);
+    }
   };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-8 w-48" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-10 w-32" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -73,7 +139,7 @@ export const ItineraryTab = () => {
           <Accordion
             type="multiple"
             className="w-full"
-            defaultValue={["item-1"]}
+            defaultValue={itinerary.length > 0 ? [itinerary[0].id] : []}
           >
             {itinerary.map((item) => (
               <AccordionItem key={item.id} value={item.id}>
