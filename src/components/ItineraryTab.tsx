@@ -29,13 +29,15 @@ interface ItineraryDayFormProps {
 const ItineraryDayForm = ({ item, onUpdateItem, onRemoveItem }: ItineraryDayFormProps) => {
   const [location, setLocation] = useState(item.location);
   const [activity, setActivity] = useState(item.activity);
+  const [time, setTime] = useState(item.time);
 
   useEffect(() => {
     setLocation(item.location);
     setActivity(item.activity);
+    setTime(item.time);
   }, [item]);
 
-  const handleBlur = (field: 'location' | 'activity', value: string) => {
+  const handleBlur = (field: 'location' | 'activity' | 'time', value: string | null) => {
     if (value !== item[field]) {
       onUpdateItem(item.id, { [field]: value });
     }
@@ -43,20 +45,37 @@ const ItineraryDayForm = ({ item, onUpdateItem, onRemoveItem }: ItineraryDayForm
 
   return (
     <div className="space-y-4 p-2">
-      <div>
-        <label
-          htmlFor={`location-${item.id}`}
-          className="block text-sm font-medium mb-1"
-        >
-          Location
-        </label>
-        <Input
-          id={`location-${item.id}`}
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          onBlur={() => handleBlur('location', location)}
-          placeholder="e.g., City, Landmark"
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="sm:col-span-2">
+          <label
+            htmlFor={`location-${item.id}`}
+            className="block text-sm font-medium mb-1"
+          >
+            Location
+          </label>
+          <Input
+            id={`location-${item.id}`}
+            value={location || ''}
+            onChange={(e) => setLocation(e.target.value)}
+            onBlur={() => handleBlur('location', location)}
+            placeholder="e.g., City, Landmark"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor={`time-${item.id}`}
+            className="block text-sm font-medium mb-1"
+          >
+            Time
+          </label>
+          <Input
+            id={`time-${item.id}`}
+            value={time || ''}
+            onChange={(e) => setTime(e.target.value)}
+            onBlur={() => handleBlur('time', time)}
+            placeholder="e.g., 9:00 AM or Morning"
+          />
+        </div>
       </div>
       <div>
         <label
@@ -67,7 +86,7 @@ const ItineraryDayForm = ({ item, onUpdateItem, onRemoveItem }: ItineraryDayForm
         </label>
         <Textarea
           id={`activity-${item.id}`}
-          value={activity}
+          value={activity || ''}
           onChange={(e) => setActivity(e.target.value)}
           onBlur={() => handleBlur('activity', activity)}
           placeholder="Describe the day's activities..."
@@ -110,7 +129,7 @@ export const ItineraryTab = ({
                 <AccordionItem key={item.id} value={item.id}>
                   <AccordionTrigger>
                     <span className="font-semibold text-left">
-                      Day {item.day}: {item.location || "New Location"}
+                      Day {item.day}: {item.time ? `${item.time} - ` : ''}{item.location || "New Location"}
                     </span>
                   </AccordionTrigger>
                   <AccordionContent>

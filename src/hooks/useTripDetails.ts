@@ -79,7 +79,7 @@ export const useTripDetails = (tripId: string | undefined) => {
   const addItineraryItem = async () => {
     if (!tripId) return;
     const newDay = itinerary.length > 0 ? Math.max(...itinerary.map(i => i.day)) + 1 : 1;
-    const { data, error } = await supabase.from("itinerary_items").insert({ day: newDay, location: "", activity: "", trip_id: tripId }).select().single();
+    const { data, error } = await supabase.from("itinerary_items").insert({ day: newDay, location: "", activity: "", time: "", trip_id: tripId }).select().single();
     if (error) { showError("Failed to add day."); return; }
     setItinerary(prev => [...prev, data as ItineraryItem]);
     showSuccess("Day added.");
