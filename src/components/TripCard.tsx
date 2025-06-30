@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Trash2, Users } from "lucide-react";
+import { MapPin, Trash2, Users, Copy } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { Progress } from "./ui/progress";
@@ -27,9 +27,10 @@ import { Progress } from "./ui/progress";
 interface TripCardProps {
   trip: Trip;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
 }
 
-export const TripCard = ({ trip, onDelete }: TripCardProps) => {
+export const TripCard = ({ trip, onDelete, onDuplicate }: TripCardProps) => {
   const formattedStartDate = format(new Date(trip.startDate), "MMM d, yyyy");
   const formattedEndDate = format(new Date(trip.endDate), "MMM d, yyyy");
 
@@ -65,31 +66,36 @@ export const TripCard = ({ trip, onDelete }: TripCardProps) => {
         )}
       </CardContent>
       <CardFooter className="flex justify-between items-center pt-4">
-        <Button asChild className="flex-grow">
+        <Button asChild className="flex-grow mr-2">
           <Link to={`/trip/${trip.id}`}>View Trip</Link>
         </Button>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="icon" className="ml-2 flex-shrink-0">
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete this
-                trip and all of its associated data.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => onDelete(trip.id)}>
-                Continue
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => onDuplicate(trip.id)}>
+            <Copy className="h-4 w-4" />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="icon">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete this
+                  trip and all of its associated data.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(trip.id)}>
+                  Continue
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </CardFooter>
     </Card>
   );

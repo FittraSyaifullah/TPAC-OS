@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { TripCard } from "@/components/TripCard";
 import { Plus, Calendar, Users, Package, Search } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
+import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toast";
 import { SummaryWidget } from "@/components/SummaryWidget";
 import { EmptyState } from "@/components/EmptyState";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -17,6 +17,7 @@ const Dashboard = () => {
   const { upcomingTrips, pastTrips, loading, removeTrip } = useDashboardData();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
 
   const trips = activeTab === 'upcoming' ? upcomingTrips : pastTrips;
 
@@ -52,6 +53,75 @@ const Dashboard = () => {
     } catch (error: any) {
       showError("Failed to delete trip.");
       console.error("Error deleting trip:", error);
+    }
+  };
+
+  const handleDuplicateTrip = async (tripId: string) => {
+    const toastId = showLoading("Duplicating trip...");
+    try {
+      const { data: originalTrip, error: tripError } = await supabase
+        .from("events")
+        .select("*")
+        .eq("id", tripId)
+        .single();
+      if (tripError) throw tripError;
+
+      const [participantsRes, itineraryRes, gearRes, contactsRes] = await Promise.all([
+        supabase.from("trip_participants").select("*").eq("trip_id", tripId),
+        supabase.from("itinerary_items").select("*").eq("trip_id", tripId),
+        supabase.from("trip_gear_items").select("*").eq("trip_id", tripId),
+        supabase.from("emergency_contacts").select("*").eq("trip_id", tripId),
+      ]);
+
+      const errors = [participantsRes.error, itineraryRes.error, gearRes.error, contactsRes.error].filter(Boolean);
+      if (errors.length > 0) throw errors[0];
+
+      const { data: newTrip, error: newTripError } = await supabase
+        .from("events")
+        .insert({
+          title: `${originalTrip.title} (Copy)`,
+          description: originalTrip.description,
+          date: originalTrip.date,
+          end_date: originalTrip.end_date,
+          location: originalTrip.location,
+          max_participants: originalTrip.max_participants,
+        })
+        .select()
+        .single();
+      if (newTripError) throw newTripError;
+
+      const newTripId = newTrip.id;
+
+      const participantsToInsert = participantsRes.data.map(({ id, trip_id, created_at, ...p }) => ({ ...p, trip_id: newTripId }));
+      const itineraryToInsert = itineraryRes.data.map(({ id, trip_id, created_at, ...i }) => ({ ...i, trip_id: newTripId }));
+      const gearToInsert = gearRes.data.map(({ id, trip_id, created_at, ...g }) => ({ ...g, trip_id: newTripId, status: 'Pending' }));
+      const contactsToInsert = contactsRes.data.map(({ id, trip_id, created_at, ...c }) => ({ ...c, trip_id: newTripId }));
+
+      if (participantsToInsert.length > 0) {
+        const { error } = await supabase.from("trip_participants").insert(participantsToInsert);
+        if (error) throw error;
+      }
+      if (itineraryToInsert.length > 0) {
+        const { error } = await supabase.from("itinerary_items").insert(itineraryToInsert);
+        if (error) throw error;
+      }
+      if (gearToInsert.length > 0) {
+        const { error } = await supabase.from("trip_gear_items").insert(gearToInsert);
+        if (error) throw error;
+      }
+      if (contactsToInsert.length > 0) {
+        const { error } = await supabase.from("emergency_contacts").insert(contactsToInsert);
+        if (error) throw error;
+      }
+
+      dismissToast(toastId);
+      showSuccess("Trip duplicated successfully!");
+      navigate(`/trip/${newTripId}`);
+
+    } catch (error: any) {
+      dismissToast(toastId);
+      showError(error.message || "Failed to duplicate trip.");
+      console.error("Error duplicating trip:", error);
     }
   };
 
@@ -135,7 +205,7 @@ const Dashboard = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTrips.map((trip) => (
-              <TripCard key={trip.id} trip={trip} onDelete={handleDeleteTrip} />
+              <TripCard key={trip.id} trip={trip} onDelete={handleDeleteTrip} onDuplicate={handleDuplicateTrip} />
             ))}
           </div>
         )}
