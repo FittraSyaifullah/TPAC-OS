@@ -11,6 +11,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardLoadingSkeleton } from "@/components/DashboardLoadingSkeleton";
+import { GearStatusChart } from "@/components/GearStatusChart";
 
 const Dashboard = () => {
   const { upcomingTrips, pastTrips, loading, removeTrip } = useDashboardData();
@@ -35,9 +36,10 @@ const Dashboard = () => {
       (acc, trip) => {
         acc.totalParticipants += trip.participant_count || 0;
         acc.totalGearItems += trip.gear_total || 0;
+        acc.totalGearPacked += trip.gear_packed || 0;
         return acc;
       },
-      { totalParticipants: 0, totalGearItems: 0 },
+      { totalParticipants: 0, totalGearItems: 0, totalGearPacked: 0 },
     );
   }, [filteredTrips]);
 
@@ -103,6 +105,10 @@ const Dashboard = () => {
           >
             <div className="text-2xl font-bold">{stats.totalGearItems}</div>
           </SummaryWidget>
+        </section>
+
+        <section className="mb-8">
+          <GearStatusChart packed={stats.totalGearPacked} total={stats.totalGearItems} />
         </section>
 
         <Tabs defaultValue="upcoming" onValueChange={(value) => setActiveTab(value as 'upcoming' | 'past')}>
