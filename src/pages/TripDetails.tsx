@@ -18,6 +18,7 @@ const TripDetails = () => {
   const { id } = useParams<{ id: string }>();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
+  const [gearCounts, setGearCounts] = useState({ packed: 0, total: 0 });
 
   useEffect(() => {
     const fetchTrip = async () => {
@@ -108,7 +109,7 @@ const TripDetails = () => {
           />
           <SummaryWidget
             title="Gear Packed"
-            value="34 / 45"
+            value={`${gearCounts.packed} / ${gearCounts.total}`}
             icon={<Package className="h-4 w-4 text-muted-foreground" />}
           />
         </section>
@@ -124,7 +125,7 @@ const TripDetails = () => {
             <ItineraryTab />
           </TabsContent>
           <TabsContent value="gear" className="mt-4">
-            <GearTab />
+            <GearTab tripId={trip.id} onCountsChange={setGearCounts} />
           </TabsContent>
           <TabsContent value="participants" className="mt-4">
             <ParticipantsTab />

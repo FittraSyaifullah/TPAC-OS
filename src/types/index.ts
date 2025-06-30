@@ -22,7 +22,9 @@ export interface GearItem {
   id: string;
   name: string;
   status: "Pending" | "Packed";
-  assignedTo: string; // Participant ID
+  assigned_to: string | null;
+  trip_id?: string;
+  creator_id?: string;
 }
 
 export type ContactType = "Rescue" | "Local Authority" | "Embassy" | "Guide";

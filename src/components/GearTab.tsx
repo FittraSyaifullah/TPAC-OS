@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GearItem, Participant } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +38,10 @@ import {
 } from "@/components/ui/table";
 import { Plus, Trash2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./AuthProvider";
+import { showError, showSuccess } from "@/utils/toast";
+import { Skeleton } from "./ui/skeleton";
 
 const initialParticipants: Participant[] = [
   { id: "p1", name: "Alex" },
@@ -46,50 +50,129 @@ const initialParticipants: Participant[] = [
   { id: "unassigned", name: "Unassigned" },
 ];
 
-const initialGear: GearItem[] = [
-  { id: "g1", name: "Backpack (65L)", status: "Packed", assignedTo: "p1" },
-  { id: "g2", name: "Tent", status: "Packed", assignedTo: "p2" },
-  { id: "g3", name: "Sleeping Bag", status: "Pending", assignedTo: "p1" },
-  { id: "g4", name: "Water Filter", status: "Pending", assignedTo: "p3" },
-  { id: "g5", name: "First Aid Kit", status: "Packed", assignedTo: "unassigned" },
-];
+interface GearTabProps {
+  tripId: string;
+  onCountsChange: (counts: { packed: number; total: number }) => void;
+}
 
-export const GearTab = () => {
-  const [gearItems, setGearItems] = useState<GearItem[]>(initialGear);
+export const GearTab = ({ tripId, onCountsChange }: GearTabProps) => {
+  const { user } = useAuth();
+  const [gearItems, setGearItems] = useState<GearItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [participants] = useState<Participant[]>(initialParticipants);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const isMobile = useIsMobile();
 
-  const handleAddItem = () => {
-    if (!newItemName.trim()) return;
-    const newItem: GearItem = {
-      id: `g-${Date.now()}`,
+  useEffect(() => {
+    const fetchGear = async () => {
+      if (!tripId || !user) return;
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("trip_gear_items")
+          .select("id, name, status, assigned_to")
+          .eq("trip_id", tripId)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        const items = data.map((item) => ({
+          ...item,
+          status: item.status === "Packed" ? "Packed" : "Pending",
+        })) as GearItem[];
+        setGearItems(items);
+      } catch (error: any) {
+        showError("Failed to fetch gear list.");
+        console.error("Error fetching gear:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGear();
+  }, [tripId, user]);
+
+  useEffect(() => {
+    const packedCount = gearItems.filter(
+      (item) => item.status === "Packed",
+    ).length;
+    const totalCount = gearItems.length;
+    onCountsChange({ packed: packedCount, total: totalCount });
+  }, [gearItems, onCountsChange]);
+
+  const handleAddItem = async () => {
+    if (!newItemName.trim() || !user) return;
+    const newItem: Omit<GearItem, "id"> = {
       name: newItemName.trim(),
       status: "Pending",
-      assignedTo: "unassigned",
+      assigned_to: "unassigned",
+      trip_id: tripId,
+      creator_id: user.id,
     };
-    setGearItems([newItem, ...gearItems]);
-    setNewItemName("");
-    setIsAddDialogOpen(false);
+
+    try {
+      const { data, error } = await supabase
+        .from("trip_gear_items")
+        .insert(newItem)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setGearItems([data as GearItem, ...gearItems]);
+      setNewItemName("");
+      setIsAddDialogOpen(false);
+      showSuccess("Item added.");
+    } catch (error: any) {
+      showError("Failed to add item.");
+      console.error("Error adding item:", error);
+    }
   };
 
-  const handleUpdate = (
+  const handleUpdate = async (
     id: string,
     updates: Partial<Omit<GearItem, "id">>,
   ) => {
-    setGearItems(
-      gearItems.map((item) =>
-        item.id === id ? { ...item, ...updates } : item,
-      ),
-    );
+    try {
+      const { error } = await supabase
+        .from("trip_gear_items")
+        .update(updates)
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setGearItems(
+        gearItems.map((item) =>
+          item.id === id ? { ...item, ...updates } : item,
+        ),
+      );
+    } catch (error: any) {
+      showError("Failed to update item.");
+      console.error("Error updating item:", error);
+    }
   };
 
-  const handleRemoveItem = (id: string) => {
-    setGearItems(gearItems.filter((item) => item.id !== id));
+  const handleRemoveItem = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("trip_gear_items")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setGearItems(gearItems.filter((item) => item.id !== id));
+      showSuccess("Item removed.");
+    } catch (error: any) {
+      showError("Failed to remove item.");
+      console.error("Error removing item:", error);
+    }
   };
 
-  const packedCount = gearItems.filter((item) => item.status === "Packed").length;
+  const packedCount = gearItems.filter(
+    (item) => item.status === "Packed",
+  ).length;
   const totalCount = gearItems.length;
 
   const gearListProps = {
@@ -145,7 +228,13 @@ export const GearTab = () => {
         </div>
       </CardHeader>
       <CardContent>
-        {isMobile ? (
+        {loading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        ) : isMobile ? (
           <MobileGearList {...gearListProps} />
         ) : (
           <DesktopGearList {...gearListProps} />
@@ -156,7 +245,12 @@ export const GearTab = () => {
 };
 
 // Desktop View
-const DesktopGearList = ({ gearItems, participants, handleUpdate, handleRemoveItem }: any) => (
+const DesktopGearList = ({
+  gearItems,
+  participants,
+  handleUpdate,
+  handleRemoveItem,
+}: any) => (
   <Table>
     <TableHeader>
       <TableRow>
@@ -167,13 +261,15 @@ const DesktopGearList = ({ gearItems, participants, handleUpdate, handleRemoveIt
       </TableRow>
     </TableHeader>
     <TableBody>
-      {gearItems.map((item) => (
+      {gearItems.map((item: GearItem) => (
         <TableRow key={item.id}>
           <TableCell className="font-medium">{item.name}</TableCell>
           <TableCell>
             <Select
-              value={item.assignedTo}
-              onValueChange={(value) => handleUpdate(item.id, { assignedTo: value })}
+              value={item.assigned_to || "unassigned"}
+              onValueChange={(value) =>
+                handleUpdate(item.id, { assigned_to: value })
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Assign..." />
@@ -193,7 +289,9 @@ const DesktopGearList = ({ gearItems, participants, handleUpdate, handleRemoveIt
                 id={`status-${item.id}`}
                 checked={item.status === "Packed"}
                 onCheckedChange={(checked) =>
-                  handleUpdate(item.id, { status: checked ? "Packed" : "Pending" })
+                  handleUpdate(item.id, {
+                    status: checked ? "Packed" : "Pending",
+                  })
                 }
               />
               <Label htmlFor={`status-${item.id}`}>{item.status}</Label>
@@ -215,9 +313,14 @@ const DesktopGearList = ({ gearItems, participants, handleUpdate, handleRemoveIt
 );
 
 // Mobile View
-const MobileGearList = ({ gearItems, participants, handleUpdate, handleRemoveItem }: any) => (
+const MobileGearList = ({
+  gearItems,
+  participants,
+  handleUpdate,
+  handleRemoveItem,
+}: any) => (
   <div className="space-y-4">
-    {gearItems.map((item) => (
+    {gearItems.map((item: GearItem) => (
       <Card key={item.id}>
         <CardHeader>
           <CardTitle>{item.name}</CardTitle>
@@ -226,8 +329,10 @@ const MobileGearList = ({ gearItems, participants, handleUpdate, handleRemoveIte
           <div className="flex items-center justify-between">
             <Label>Assigned To</Label>
             <Select
-              value={item.assignedTo}
-              onValueChange={(value) => handleUpdate(item.id, { assignedTo: value })}
+              value={item.assigned_to || "unassigned"}
+              onValueChange={(value) =>
+                handleUpdate(item.id, { assigned_to: value })
+              }
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Assign..." />
@@ -248,7 +353,9 @@ const MobileGearList = ({ gearItems, participants, handleUpdate, handleRemoveIte
                 id={`mobile-status-${item.id}`}
                 checked={item.status === "Packed"}
                 onCheckedChange={(checked) =>
-                  handleUpdate(item.id, { status: checked ? "Packed" : "Pending" })
+                  handleUpdate(item.id, {
+                    status: checked ? "Packed" : "Pending",
+                  })
                 }
               />
               <Label htmlFor={`mobile-status-${item.id}`}>{item.status}</Label>
