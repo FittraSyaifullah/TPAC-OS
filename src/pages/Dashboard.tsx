@@ -95,7 +95,7 @@ const Dashboard = () => {
           <TripCard key={trip.id} trip={trip} onDelete={handleDeleteTrip} />
         ))}
       </div>
-    );
+    };
   };
 
   return (
