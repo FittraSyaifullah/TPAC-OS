@@ -157,10 +157,38 @@ export const useTripDetails = (tripId: string | undefined) => {
   };
 
   const removeItineraryItem = async (id: string) => {
+    const itemToRemove = itinerary.find(i => i.id === id);
+    if (!itemToRemove) return;
+
     const { error } = await supabase.from("itinerary_items").delete().eq("id", id);
-    if (error) { showError("Failed to remove day."); return; }
-    setItinerary(prev => prev.filter(i => i.id !== id));
-    showSuccess("Day removed.");
+    if (error) {
+      showError("Failed to remove day.");
+      return;
+    }
+
+    const remainingItems = itinerary.filter(i => i.id !== id);
+    const updates: Partial<ItineraryItem>[] = [];
+    const renumberedItems = remainingItems.map(item => {
+      if (item.day > itemToRemove.day) {
+        const updatedItem = { ...item, day: item.day - 1 };
+        updates.push({ id: updatedItem.id, day: updatedItem.day });
+        return updatedItem;
+      }
+      return item;
+    }).sort((a, b) => a.day - b.day);
+
+    if (updates.length > 0) {
+      const { error: updateError } = await supabase.from("itinerary_items").upsert(updates);
+      if (updateError) {
+        showError("Failed to update schedule. Please refresh.");
+        // Re-fetch data to ensure consistency
+        fetchData();
+        return;
+      }
+    }
+
+    setItinerary(renumberedItems);
+    showSuccess("Day removed and schedule updated.");
   };
 
   // Gear Handlers
