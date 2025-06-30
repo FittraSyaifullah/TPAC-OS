@@ -135,7 +135,7 @@ const Dashboard = () => {
               </div>
             </SummaryWidget>
             <SummaryWidget
-              title="Gear Items"
+              title="Total Gear Items"
               icon={<Package className="h-4 w-4 text-muted-foreground" />}
             >
               <div className="text-2xl font-bold">{stats.totalGearItems}</div>
