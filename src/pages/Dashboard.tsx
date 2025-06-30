@@ -11,10 +11,14 @@ import { SummaryWidget } from "@/components/SummaryWidget";
 import { EmptyState } from "@/components/EmptyState";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Dashboard = () => {
-  const { trips, loading, removeTrip } = useDashboardData();
+  const { upcomingTrips, pastTrips, loading, removeTrip } = useDashboardData();
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [searchTerm, setSearchTerm] = useState("");
+
+  const trips = activeTab === 'upcoming' ? upcomingTrips : pastTrips;
 
   const filteredTrips = useMemo(() => {
     if (!searchTerm) {
@@ -42,7 +46,6 @@ const Dashboard = () => {
     try {
       const { error } = await supabase.from("events").delete().eq("id", id);
       if (error) throw error;
-
       removeTrip(id);
       showSuccess("Trip deleted successfully!");
     } catch (error: any) {
@@ -54,37 +57,29 @@ const Dashboard = () => {
   const renderContent = () => {
     if (loading) {
       return (
-        <>
-          <section className="mb-8 grid gap-4 md:grid-cols-3">
-            <Skeleton className="h-28 w-full" />
-            <Skeleton className="h-28 w-full" />
-            <Skeleton className="h-28 w-full" />
-          </section>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-48 w-full" />
-            ))}
-          </div>
-        </>
-      );
-    }
-
-    if (trips.length === 0) {
-      return (
-        <EmptyState
-          icon={<Calendar className="h-8 w-8 text-muted-foreground" />}
-          title="No upcoming trips"
-          description="Plan a new adventure to see it here."
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-64 w-full" />
+          ))}
+        </div>
       );
     }
 
     if (filteredTrips.length === 0) {
+      if (searchTerm) {
+        return (
+          <EmptyState
+            icon={<Search className="h-8 w-8 text-muted-foreground" />}
+            title="No trips found"
+            description="Try adjusting your search term."
+          />
+        );
+      }
       return (
         <EmptyState
-          icon={<Search className="h-8 w-8 text-muted-foreground" />}
-          title="No trips found"
-          description="Try adjusting your search term."
+          icon={<Calendar className="h-8 w-8 text-muted-foreground" />}
+          title={activeTab === 'upcoming' ? "No upcoming trips" : "No past trips"}
+          description={activeTab === 'upcoming' ? "Plan a new adventure to see it here." : "Completed trips will appear here."}
         />
       );
     }
@@ -95,7 +90,7 @@ const Dashboard = () => {
           <TripCard key={trip.id} trip={trip} onDelete={handleDeleteTrip} />
         ))}
       </div>
-    };
+    );
   };
 
   return (
@@ -126,13 +121,13 @@ const Dashboard = () => {
         {!loading && (
           <section className="mb-8 grid gap-4 md:grid-cols-3">
             <SummaryWidget
-              title="Total Trips"
+              title="Trips"
               icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
             >
               <div className="text-2xl font-bold">{filteredTrips.length}</div>
             </SummaryWidget>
             <SummaryWidget
-              title="Total Participants"
+              title="Participants"
               icon={<Users className="h-4 w-4 text-muted-foreground" />}
             >
               <div className="text-2xl font-bold">
@@ -140,7 +135,7 @@ const Dashboard = () => {
               </div>
             </SummaryWidget>
             <SummaryWidget
-              title="Total Gear Items"
+              title="Gear Items"
               icon={<Package className="h-4 w-4 text-muted-foreground" />}
             >
               <div className="text-2xl font-bold">{stats.totalGearItems}</div>
@@ -148,7 +143,13 @@ const Dashboard = () => {
           </section>
         )}
 
-        <h2 className="text-2xl font-bold mb-4">Upcoming Trips</h2>
+        <Tabs defaultValue="upcoming" onValueChange={(value) => setActiveTab(value as 'upcoming' | 'past')}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+            <TabsTrigger value="past">Past</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        
         {renderContent()}
       </main>
     </div>

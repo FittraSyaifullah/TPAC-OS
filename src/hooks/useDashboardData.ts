@@ -4,28 +4,39 @@ import { Trip } from "@/types";
 import { showError } from "@/utils/toast";
 
 export const useDashboardData = () => {
-  const [trips, setTrips] = useState<Trip[]>([]);
+  const [upcomingTrips, setUpcomingTrips] = useState<Trip[]>([]);
+  const [pastTrips, setPastTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const formatTrips = (data: any[]): Trip[] => {
+    return data.map((event: any) => ({
+      id: event.id,
+      title: event.title,
+      startDate: new Date(event.date),
+      endDate: new Date(event.end_date),
+      location: event.location,
+      gear_total: event.gear_total,
+      gear_packed: event.gear_packed,
+      participant_count: event.participant_count,
+    }));
+  };
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('get_upcoming_trips_with_stats');
+      const [upcomingRes, pastRes] = await Promise.all([
+        supabase.rpc('get_upcoming_trips_with_stats'),
+        supabase.rpc('get_past_trips_with_stats'),
+      ]);
 
-      if (error) throw error;
+      if (upcomingRes.error) throw upcomingRes.error;
+      if (pastRes.error) throw pastRes.error;
 
-      if (data) {
-        const formattedTrips: Trip[] = data.map((event: any) => ({
-          id: event.id,
-          title: event.title,
-          startDate: new Date(event.date),
-          endDate: new Date(event.end_date),
-          location: event.location,
-          gear_total: event.gear_total,
-          gear_packed: event.gear_packed,
-          participant_count: event.participant_count,
-        }));
-        setTrips(formattedTrips);
+      if (upcomingRes.data) {
+        setUpcomingTrips(formatTrips(upcomingRes.data));
+      }
+      if (pastRes.data) {
+        setPastTrips(formatTrips(pastRes.data));
       }
     } catch (error: any) {
       showError("Failed to fetch dashboard data.");
@@ -40,8 +51,9 @@ export const useDashboardData = () => {
   }, []);
 
   const removeTrip = (tripId: string) => {
-    setTrips((prevTrips) => prevTrips.filter((trip) => trip.id !== tripId));
+    setUpcomingTrips((prev) => prev.filter((trip) => trip.id !== tripId));
+    setPastTrips((prev) => prev.filter((trip) => trip.id !== tripId));
   };
 
-  return { trips, loading, removeTrip };
+  return { upcomingTrips, pastTrips, loading, removeTrip };
 };
