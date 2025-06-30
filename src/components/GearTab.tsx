@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { GearItem, Participant } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,128 +38,32 @@ import {
 } from "@/components/ui/table";
 import { Plus, Trash2, Package } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
-import { Skeleton } from "./ui/skeleton";
 import { EmptyState } from "./EmptyState";
 
 interface GearTabProps {
-  tripId: string;
+  gearItems: GearItem[];
   participants: Participant[];
-  onCountsChange: (counts: { packed: number; total: number }) => void;
+  onAddItem: (name: string) => void;
+  onUpdateItem: (id: string, updates: Partial<GearItem>) => void;
+  onRemoveItem: (id: string) => void;
 }
 
 export const GearTab = ({
-  tripId,
+  gearItems,
   participants,
-  onCountsChange,
+  onAddItem,
+  onUpdateItem,
+  onRemoveItem,
 }: GearTabProps) => {
-  const [gearItems, setGearItems] = useState<GearItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    const fetchGear = async () => {
-      if (!tripId) return;
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("trip_gear_items")
-          .select("id, name, status, assigned_to")
-          .eq("trip_id", tripId)
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-
-        const items = data.map((item) => ({
-          ...item,
-          status: item.status === "Packed" ? "Packed" : "Pending",
-        })) as GearItem[];
-        setGearItems(items);
-      } catch (error: any) {
-        showError("Failed to fetch gear list.");
-        console.error("Error fetching gear:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGear();
-  }, [tripId]);
-
-  useEffect(() => {
-    const packedCount = gearItems.filter(
-      (item) => item.status === "Packed",
-    ).length;
-    const totalCount = gearItems.length;
-    onCountsChange({ packed: packedCount, total: totalCount });
-  }, [gearItems, onCountsChange]);
-
-  const handleAddItem = async () => {
+  const handleAddItem = () => {
     if (!newItemName.trim()) return;
-    const newItem: Omit<GearItem, "id"> = {
-      name: newItemName.trim(),
-      status: "Pending",
-      assigned_to: "unassigned",
-      trip_id: tripId,
-    };
-
-    try {
-      const { data, error } = await supabase
-        .from("trip_gear_items")
-        .insert(newItem)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setGearItems([data as GearItem, ...gearItems]);
-      setNewItemName("");
-      setIsAddDialogOpen(false);
-      showSuccess("Item added.");
-    } catch (error: any) {
-      showError("Failed to add item.");
-    }
-  };
-
-  const handleUpdate = async (
-    id: string,
-    updates: Partial<Omit<GearItem, "id">>,
-  ) => {
-    try {
-      const { error } = await supabase
-        .from("trip_gear_items")
-        .update(updates)
-        .eq("id", id);
-
-      if (error) throw error;
-
-      setGearItems(
-        gearItems.map((item) =>
-          item.id === id ? { ...item, ...updates } : item,
-        ),
-      );
-    } catch (error: any) {
-      showError("Failed to update item.");
-    }
-  };
-
-  const handleRemoveItem = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("trip_gear_items")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
-      setGearItems(gearItems.filter((item) => item.id !== id));
-      showSuccess("Item removed.");
-    } catch (error: any) {
-      showError("Failed to remove item.");
-    }
+    onAddItem(newItemName);
+    setNewItemName("");
+    setIsAddDialogOpen(false);
   };
 
   const packedCount = gearItems.filter(
@@ -170,8 +74,8 @@ export const GearTab = ({
   const gearListProps = {
     gearItems,
     participants,
-    handleUpdate,
-    handleRemoveItem,
+    handleUpdate: onUpdateItem,
+    handleRemoveItem: onRemoveItem,
   };
 
   return (
@@ -220,13 +124,7 @@ export const GearTab = ({
         </div>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-          </div>
-        ) : gearItems.length > 0 ? (
+        {gearItems.length > 0 ? (
           isMobile ? (
             <MobileGearList {...gearListProps} />
           ) : (

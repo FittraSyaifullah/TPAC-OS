@@ -8,15 +8,30 @@ import { ItineraryTab } from "@/components/ItineraryTab";
 import { GearTab } from "@/components/GearTab";
 import { ParticipantsTab } from "@/components/ParticipantsTab";
 import { EmergencyTab } from "@/components/EmergencyTab";
-import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTripDetails } from "@/hooks/useTripDetails";
 
 const TripDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const { trip, participants, loading, addParticipant, removeParticipant } =
-    useTripDetails(id);
-  const [gearCounts, setGearCounts] = useState({ packed: 0, total: 0 });
+  const {
+    trip,
+    participants,
+    itinerary,
+    gearItems,
+    emergencyContacts,
+    loading,
+    addParticipant,
+    removeParticipant,
+    addItineraryItem,
+    updateItineraryItem,
+    removeItineraryItem,
+    addGearItem,
+    updateGearItem,
+    removeGearItem,
+    addEmergencyContact,
+    updateEmergencyContact,
+    removeEmergencyContact,
+  } = useTripDetails(id);
 
   if (loading) {
     return (
@@ -39,6 +54,7 @@ const TripDetails = () => {
 
   const formattedStartDate = format(trip.startDate, "MMM d, yyyy");
   const formattedEndDate = format(trip.endDate, "MMM d, yyyy");
+  const gearPackedCount = gearItems.filter(item => item.status === "Packed").length;
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -78,7 +94,7 @@ const TripDetails = () => {
           />
           <SummaryWidget
             title="Gear Packed"
-            value={`${gearCounts.packed} / ${gearCounts.total}`}
+            value={`${gearPackedCount} / ${gearItems.length}`}
             icon={<Package className="h-4 w-4 text-muted-foreground" />}
           />
         </section>
@@ -91,13 +107,20 @@ const TripDetails = () => {
             <TabsTrigger value="emergency">Emergency</TabsTrigger>
           </TabsList>
           <TabsContent value="itinerary" className="mt-4">
-            <ItineraryTab tripId={trip.id} />
+            <ItineraryTab
+              itinerary={itinerary}
+              onAddItem={addItineraryItem}
+              onUpdateItem={updateItineraryItem}
+              onRemoveItem={removeItineraryItem}
+            />
           </TabsContent>
           <TabsContent value="gear" className="mt-4">
             <GearTab
-              tripId={trip.id}
+              gearItems={gearItems}
               participants={participants}
-              onCountsChange={setGearCounts}
+              onAddItem={addGearItem}
+              onUpdateItem={updateGearItem}
+              onRemoveItem={removeGearItem}
             />
           </TabsContent>
           <TabsContent value="participants" className="mt-4">
@@ -108,7 +131,12 @@ const TripDetails = () => {
             />
           </TabsContent>
           <TabsContent value="emergency" className="mt-4">
-            <EmergencyTab tripId={trip.id} />
+            <EmergencyTab
+              contacts={emergencyContacts}
+              onAddContact={addEmergencyContact}
+              onUpdateContact={updateEmergencyContact}
+              onRemoveContact={removeEmergencyContact}
+            />
           </TabsContent>
         </Tabs>
       </main>

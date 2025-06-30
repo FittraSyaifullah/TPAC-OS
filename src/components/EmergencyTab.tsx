@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { EmergencyContact, ContactType } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,9 +30,6 @@ import {
   User,
   ShieldAlert,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
-import { Skeleton } from "./ui/skeleton";
 import { EmptyState } from "./EmptyState";
 
 const contactTypeIcons: Record<ContactType, React.ReactNode> = {
@@ -45,66 +42,29 @@ const contactTypeIcons: Record<ContactType, React.ReactNode> = {
 const contactTypes: ContactType[] = ["Rescue", "Local Authority", "Embassy", "Guide"];
 
 interface EmergencyTabProps {
-  tripId: string;
+  contacts: EmergencyContact[];
+  onAddContact: (contact: Omit<EmergencyContact, "id" | "trip_id">) => void;
+  onUpdateContact: (id: string, contact: Partial<EmergencyContact>) => void;
+  onRemoveContact: (id: string) => void;
 }
 
-export const EmergencyTab = ({ tripId }: EmergencyTabProps) => {
-  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
-  const [loading, setLoading] = useState(true);
+export const EmergencyTab = ({
+  contacts,
+  onAddContact,
+  onUpdateContact,
+  onRemoveContact,
+}: EmergencyTabProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<EmergencyContact | null>(null);
 
-  useEffect(() => {
-    const fetchContacts = async () => {
-      if (!tripId) return;
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("emergency_contacts")
-          .select("*")
-          .eq("trip_id", tripId)
-          .order("created_at", { ascending: true });
-
-        if (error) throw error;
-        setContacts(data as EmergencyContact[]);
-      } catch (error: any) {
-        showError("Failed to fetch emergency contacts.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchContacts();
-  }, [tripId]);
-
-  const handleSave = async (formData: Omit<EmergencyContact, "id" | "trip_id">) => {
-    try {
-      if (editingContact) {
-        const { data, error } = await supabase
-          .from("emergency_contacts")
-          .update(formData)
-          .eq("id", editingContact.id)
-          .select()
-          .single();
-        if (error) throw error;
-        setContacts(
-          contacts.map((c) => (c.id === editingContact.id ? data : c)),
-        );
-        showSuccess("Contact updated.");
-      } else {
-        const { data, error } = await supabase
-          .from("emergency_contacts")
-          .insert({ ...formData, trip_id: tripId })
-          .select()
-          .single();
-        if (error) throw error;
-        setContacts([data, ...contacts]);
-        showSuccess("Contact added.");
-      }
-      setIsDialogOpen(false);
-      setEditingContact(null);
-    } catch (error: any) {
-      showError("Failed to save contact.");
+  const handleSave = (formData: Omit<EmergencyContact, "id" | "trip_id">) => {
+    if (editingContact) {
+      onUpdateContact(editingContact.id, formData);
+    } else {
+      onAddContact(formData);
     }
+    setIsDialogOpen(false);
+    setEditingContact(null);
   };
 
   const handleEdit = (contact: EmergencyContact) => {
@@ -115,17 +75,6 @@ export const EmergencyTab = ({ tripId }: EmergencyTabProps) => {
   const handleAddNew = () => {
     setEditingContact(null);
     setIsDialogOpen(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      const { error } = await supabase.from("emergency_contacts").delete().eq("id", id);
-      if (error) throw error;
-      setContacts(contacts.filter((c) => c.id !== id));
-      showSuccess("Contact removed.");
-    } catch (error) {
-      showError("Failed to remove contact.");
-    }
   };
 
   return (
@@ -154,12 +103,7 @@ export const EmergencyTab = ({ tripId }: EmergencyTabProps) => {
         </Dialog>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-          </div>
-        ) : contacts.length > 0 ? (
+        {contacts.length > 0 ? (
           <div className="space-y-4">
             {contacts.map((contact) => (
               <div
@@ -186,7 +130,7 @@ export const EmergencyTab = ({ tripId }: EmergencyTabProps) => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleDelete(contact.id)}
+                    onClick={() => onRemoveContact(contact.id)}
                     className="text-red-500 hover:text-red-600"
                   >
                     <Trash2 className="h-4 w-4" />

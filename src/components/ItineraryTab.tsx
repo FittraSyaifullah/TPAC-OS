@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -11,119 +11,21 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ItineraryItem } from "@/types";
 import { Plus, Trash2, CalendarDays } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
-import { Skeleton } from "./ui/skeleton";
 import { EmptyState } from "./EmptyState";
 
 interface ItineraryTabProps {
-  tripId: string;
+  itinerary: ItineraryItem[];
+  onAddItem: () => void;
+  onUpdateItem: (id: string, updates: Partial<ItineraryItem>) => void;
+  onRemoveItem: (id: string) => void;
 }
 
-export const ItineraryTab = ({ tripId }: ItineraryTabProps) => {
-  const [itinerary, setItinerary] = useState<ItineraryItem[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchItinerary = async () => {
-      if (!tripId) return;
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("itinerary_items")
-          .select("*")
-          .eq("trip_id", tripId)
-          .order("day", { ascending: true });
-
-        if (error) throw error;
-        setItinerary(data as ItineraryItem[]);
-      } catch (error: any) {
-        showError("Failed to fetch itinerary.");
-        console.error("Error fetching itinerary:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchItinerary();
-  }, [tripId]);
-
-  const handleAddDay = async () => {
-    const newDayNumber =
-      itinerary.length > 0
-        ? Math.max(...itinerary.map((item) => item.day)) + 1
-        : 1;
-    const newItem: Omit<ItineraryItem, "id"> = {
-      day: newDayNumber,
-      location: "",
-      activity: "",
-      trip_id: tripId,
-    };
-
-    try {
-      const { data, error } = await supabase
-        .from("itinerary_items")
-        .insert(newItem)
-        .select()
-        .single();
-      if (error) throw error;
-      setItinerary([...itinerary, data as ItineraryItem]);
-      showSuccess("New day added to itinerary.");
-    } catch (error: any) {
-      showError("Failed to add new day.");
-    }
-  };
-
-  const handleRemoveDay = async (id: string) => {
-    try {
-      const { error } = await supabase.from("itinerary_items").delete().eq("id", id);
-      if (error) throw error;
-      setItinerary(itinerary.filter((item) => item.id !== id));
-      showSuccess("Day removed from itinerary.");
-    } catch (error) {
-      showError("Failed to remove day.");
-    }
-  };
-
-  const handleUpdateDay = async (
-    id: string,
-    field: "location" | "activity",
-    value: string,
-  ) => {
-    const originalItinerary = [...itinerary];
-    const updatedItinerary = itinerary.map((item) =>
-      item.id === id ? { ...item, [field]: value } : item,
-    );
-    setItinerary(updatedItinerary);
-
-    try {
-      const { error } = await supabase
-        .from("itinerary_items")
-        .update({ [field]: value })
-        .eq("id", id);
-      if (error) {
-        setItinerary(originalItinerary);
-        throw error;
-      }
-    } catch (error) {
-      showError(`Failed to update ${field}.`);
-    }
-  };
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-8 w-48" />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-10 w-32" />
-        </CardContent>
-      </Card>
-    );
-  }
-
+export const ItineraryTab = ({
+  itinerary,
+  onAddItem,
+  onUpdateItem,
+  onRemoveItem,
+}: ItineraryTabProps) => {
   return (
     <Card>
       <CardHeader>
@@ -156,9 +58,12 @@ export const ItineraryTab = ({ tripId }: ItineraryTabProps) => {
                         <Input
                           id={`location-${item.id}`}
                           value={item.location}
-                          onChange={(e) =>
-                            handleUpdateDay(item.id, "location", e.target.value)
+                          onBlur={(e) =>
+                            onUpdateItem(item.id, { location: e.target.value })
                           }
+                          onChange={(e) => {
+                            // This can be used for local state updates if needed
+                          }}
                           placeholder="e.g., City, Landmark"
                         />
                       </div>
@@ -172,9 +77,12 @@ export const ItineraryTab = ({ tripId }: ItineraryTabProps) => {
                         <Textarea
                           id={`activity-${item.id}`}
                           value={item.activity}
-                          onChange={(e) =>
-                            handleUpdateDay(item.id, "activity", e.target.value)
+                          onBlur={(e) =>
+                            onUpdateItem(item.id, { activity: e.target.value })
                           }
+                          onChange={(e) => {
+                            // This can be used for local state updates if needed
+                          }}
                           placeholder="Describe the day's activities..."
                           rows={4}
                         />
@@ -182,7 +90,7 @@ export const ItineraryTab = ({ tripId }: ItineraryTabProps) => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleRemoveDay(item.id)}
+                        onClick={() => onRemoveItem(item.id)}
                         className="mt-2"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
@@ -200,7 +108,7 @@ export const ItineraryTab = ({ tripId }: ItineraryTabProps) => {
               description="Add the first day to start planning your schedule."
             />
           )}
-          <Button onClick={handleAddDay}>
+          <Button onClick={onAddItem}>
             <Plus className="mr-2 h-4 w-4" />
             Add Day
           </Button>
