@@ -270,11 +270,15 @@ const TripDetails = () => {
               />
             </div>
             <Button type="button" size="sm" className="px-3" onClick={() => {
-              navigator.clipboard.writeText(shareUrl).then(() => {
-                showSuccess("Link copied to clipboard!");
-              }).catch(() => {
-                showError("Could not copy link automatically. Please copy it manually.");
-              });
+              if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                  showSuccess("Link copied to clipboard!");
+                }).catch(() => {
+                  showError("Could not copy link automatically. Please copy it manually.");
+                });
+              } else {
+                showError("Automatic copy is not available. Please copy the link manually.");
+              }
             }}>
               <span className="sr-only">Copy</span>
               <Copy className="h-4 w-4" />
