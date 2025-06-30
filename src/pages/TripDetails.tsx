@@ -31,6 +31,7 @@ const TripDetails = () => {
     documents,
     loading,
     addParticipant,
+    updateParticipant,
     removeParticipant,
     addItineraryItem,
     updateItineraryItem,
@@ -195,6 +196,7 @@ const TripDetails = () => {
             <ParticipantsTab
               participants={participants}
               onAddParticipant={addParticipant}
+              onUpdateParticipant={updateParticipant}
               onRemoveParticipant={removeParticipant}
             />
           </TabsContent>

@@ -68,6 +68,39 @@ export const useTripDetails = (tripId: string | undefined) => {
     showSuccess("Participant added.");
   };
 
+  const updateParticipant = async (id: string, newName: string) => {
+    if (!tripId || !newName.trim()) return;
+    const oldParticipant = participants.find(p => p.id === id);
+    if (!oldParticipant) {
+      showError("Participant not found.");
+      return;
+    }
+    const oldName = oldParticipant.name;
+
+    const { error: gearUpdateError } = await supabase
+      .from('trip_gear_items')
+      .update({ assigned_to: newName.trim() })
+      .eq('trip_id', tripId)
+      .eq('assigned_to', oldName);
+
+    if (gearUpdateError) {
+      showError("Failed to update gear assignments.");
+      return;
+    }
+
+    const { data, error } = await supabase.from("trip_participants").update({ name: newName.trim() }).eq("id", id).select().single();
+    if (error) {
+      showError("Failed to update participant.");
+      return;
+    }
+
+    setParticipants(prev => prev.map(p => (p.id === id ? (data as Participant) : p)));
+    setGearItems(prev => prev.map(item => 
+      item.assigned_to === oldName ? { ...item, assigned_to: newName.trim() } : item
+    ));
+    showSuccess("Participant updated successfully.");
+  };
+
   const removeParticipant = async (id: string) => {
     if (!tripId) return;
     const participantToRemove = participants.find(p => p.id === id);
@@ -205,6 +238,7 @@ export const useTripDetails = (tripId: string | undefined) => {
     documents,
     loading,
     addParticipant,
+    updateParticipant,
     removeParticipant,
     addItineraryItem,
     updateItineraryItem,
