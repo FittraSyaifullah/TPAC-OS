@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Trip, Participant, ItineraryItem, GearItem, EmergencyContact } from "@/types";
+import { Trip, Participant, ItineraryItem, GearItem, EmergencyContact, TripDocument } from "@/types";
 import { showError, showSuccess } from "@/utils/toast";
 
 export const useTripDetails = (tripId: string | undefined) => {
@@ -9,6 +9,7 @@ export const useTripDetails = (tripId: string | undefined) => {
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([]);
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
+  const [documents, setDocuments] = useState<TripDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
@@ -18,12 +19,13 @@ export const useTripDetails = (tripId: string | undefined) => {
     }
     setLoading(true);
     try {
-      const [tripRes, participantsRes, itineraryRes, gearRes, contactsRes] = await Promise.all([
+      const [tripRes, participantsRes, itineraryRes, gearRes, contactsRes, documentsRes] = await Promise.all([
         supabase.from("events").select("id, title, date, end_date, location").eq("id", tripId).single(),
         supabase.from("trip_participants").select("*").eq("trip_id", tripId).order("created_at"),
         supabase.from("itinerary_items").select("*").eq("trip_id", tripId).order("day"),
         supabase.from("trip_gear_items").select("*").eq("trip_id", tripId).order("created_at"),
         supabase.from("emergency_contacts").select("*").eq("trip_id", tripId).order("created_at"),
+        supabase.from("trip_documents").select("*").eq("trip_id", tripId).order("created_at"),
       ]);
 
       if (tripRes.error) throw tripRes.error;
@@ -31,6 +33,7 @@ export const useTripDetails = (tripId: string | undefined) => {
       if (itineraryRes.error) throw itineraryRes.error;
       if (gearRes.error) throw gearRes.error;
       if (contactsRes.error) throw contactsRes.error;
+      if (documentsRes.error) throw documentsRes.error;
 
       setTrip({
         ...tripRes.data,
@@ -41,6 +44,7 @@ export const useTripDetails = (tripId: string | undefined) => {
       setItinerary(itineraryRes.data as ItineraryItem[]);
       setGearItems(gearRes.data as GearItem[]);
       setEmergencyContacts(contactsRes.data as EmergencyContact[]);
+      setDocuments(documentsRes.data as TripDocument[]);
 
     } catch (error: any) {
       showError("Failed to fetch trip details.");
@@ -139,12 +143,39 @@ export const useTripDetails = (tripId: string | undefined) => {
     showSuccess("Contact removed.");
   };
 
+  // Document Handlers
+  const addDocument = async (file: File) => {
+    if (!tripId || !file) return;
+    const filePath = `${tripId}/${Date.now()}-${file.name}`;
+
+    const { error: uploadError } = await supabase.storage.from('trip_documents').upload(filePath, file);
+    if (uploadError) { showError("Failed to upload document."); console.error(uploadError); return; }
+
+    const { data, error } = await supabase.from("trip_documents").insert({ name: file.name, trip_id: tripId, file_path: filePath }).select().single();
+    if (error) { showError("Failed to save document record."); return; }
+
+    setDocuments(prev => [...prev, data as TripDocument]);
+    showSuccess("Document uploaded.");
+  };
+
+  const removeDocument = async (doc: TripDocument) => {
+    const { error: storageError } = await supabase.storage.from('trip_documents').remove([doc.file_path]);
+    if (storageError) { showError("Failed to delete document from storage."); return; }
+
+    const { error } = await supabase.from("trip_documents").delete().eq("id", doc.id);
+    if (error) { showError("Failed to remove document record."); return; }
+
+    setDocuments(prev => prev.filter(d => d.id !== doc.id));
+    showSuccess("Document removed.");
+  };
+
   return {
     trip,
     participants,
     itinerary,
     gearItems,
     emergencyContacts,
+    documents,
     loading,
     addParticipant,
     removeParticipant,
@@ -157,5 +188,7 @@ export const useTripDetails = (tripId: string | undefined) => {
     addEmergencyContact,
     updateEmergencyContact,
     removeEmergencyContact,
+    addDocument,
+    removeDocument,
   };
 };

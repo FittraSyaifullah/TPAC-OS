@@ -40,3 +40,11 @@ export interface EmergencyContact {
   type: ContactType;
   trip_id?: string;
 }
+
+export interface TripDocument {
+  id: string;
+  name: string;
+  file_path: string;
+  created_at: string;
+  trip_id?: string;
+}

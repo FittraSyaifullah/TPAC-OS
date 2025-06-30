@@ -15,6 +15,7 @@ import { useRef, useState } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import PrintableTripReport from "@/components/PrintableTripReport";
+import { DocumentsTab } from "@/components/DocumentsTab";
 
 const TripDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +25,7 @@ const TripDetails = () => {
     itinerary,
     gearItems,
     emergencyContacts,
+    documents,
     loading,
     addParticipant,
     removeParticipant,
@@ -36,6 +38,8 @@ const TripDetails = () => {
     addEmergencyContact,
     updateEmergencyContact,
     removeEmergencyContact,
+    addDocument,
+    removeDocument,
   } = useTripDetails(id);
 
   const printRef = useRef<HTMLDivElement>(null);
@@ -155,11 +159,12 @@ const TripDetails = () => {
         </section>
 
         <Tabs defaultValue="itinerary" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
             <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
             <TabsTrigger value="gear">Gear</TabsTrigger>
             <TabsTrigger value="participants">Participants</TabsTrigger>
             <TabsTrigger value="emergency">Emergency</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
           </TabsList>
           <TabsContent value="itinerary" className="mt-4">
             <ItineraryTab
@@ -191,6 +196,13 @@ const TripDetails = () => {
               onAddContact={addEmergencyContact}
               onUpdateContact={updateEmergencyContact}
               onRemoveContact={removeEmergencyContact}
+            />
+          </TabsContent>
+          <TabsContent value="documents" className="mt-4">
+            <DocumentsTab
+              documents={documents}
+              onAddDocument={addDocument}
+              onRemoveDocument={removeDocument}
             />
           </TabsContent>
         </Tabs>
