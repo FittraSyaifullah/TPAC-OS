@@ -126,7 +126,7 @@ const TripDetails = () => {
           </TabsContent>
           <TabsContent value="gear" className="mt-4">
             <GearTab tripId={trip.id} onCountsChange={setGearCounts} />
-          </Tabs-Content>
+          </TabsContent>
           <TabsContent value="participants" className="mt-4">
             <ParticipantsTab />
           </TabsContent>
