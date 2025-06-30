@@ -13,10 +13,14 @@ import { MountainSnow } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useNavigate } from "react-router-dom";
-import { GoogleSignInButton } from "@/components/GoogleSignInButton";
+import { supabase } from "@/integrations/supabase/client";
+import { showError, showSuccess } from "@/utils/toast";
 
 const AuthPage = () => {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { session, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -25,6 +29,28 @@ const AuthPage = () => {
       navigate("/dashboard");
     }
   }, [session, loading, navigate]);
+
+  const handleAuthAction = async () => {
+    setIsSubmitting(true);
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        showSuccess("Success! Please check your email to verify your account.");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        showSuccess("Signed in successfully!");
+      }
+    } catch (error: any) {
+      showError(error.error_description || error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (loading || session) {
     return <div>Loading...</div>;
@@ -47,31 +73,45 @@ const AuthPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <GoogleSignInButton isSignUp={isSignUp} />
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
-          </div>
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" placeholder="m@example.com" required />
+            <Input
+              id="email"
+              type="email"
+              placeholder="m@example.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required />
+            <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
-          <Button className="w-full">
-            {isSignUp ? "Create Account" : "Sign In"}
+          <Button
+            className="w-full"
+            onClick={handleAuthAction}
+            disabled={isSubmitting}
+          >
+            {isSubmitting
+              ? "Submitting..."
+              : isSignUp
+              ? "Create Account"
+              : "Sign In"}
           </Button>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <Button variant="link" size="sm" onClick={() => setIsSignUp(!isSignUp)}>
+          <Button
+            variant="link"
+            size="sm"
+            onClick={() => setIsSignUp(!isSignUp)}
+          >
             {isSignUp
               ? "Already have an account? Sign In"
               : "Don't have an account? Sign Up"}
