@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MountainSnow } from "lucide-react";
 import { showError } from "@/utils/toast";
-import { MadeWithDyad } from "@/components/made-with-dyad";
 
 const ACCESS_CODE = "123456";
 
@@ -84,7 +83,7 @@ const LoginPage = () => {
         </Card>
       </main>
       <footer className="p-4 bg-muted/40">
-        <MadeWithDyad />
+        {/* "Made with Dyad" removed */}
       </footer>
     </div>
   );

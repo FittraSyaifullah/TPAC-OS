@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import {
   MountainSnow,
   Map,
@@ -104,7 +103,7 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="p-4">
-        <MadeWithDyad />
+        {/* "Made with Dyad" removed */}
       </footer>
     </div>
   );

@@ -1,6 +1,5 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { Header } from "./Header";
-import { MadeWithDyad } from "./made-with-dyad";
 import { useEffect } from "react";
 
 export const Layout = () => {
@@ -20,7 +19,7 @@ export const Layout = () => {
         <Outlet />
       </main>
       <footer className="p-4">
-        <MadeWithDyad />
+        {/* "Made with Dyad" removed */}
       </footer>
     </div>
   );
