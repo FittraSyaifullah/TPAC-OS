@@ -1,6 +1,6 @@
 import { Link, useParams, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, Package, MapPin } from "lucide-react";
+import { ArrowLeft, Users, Package, MapPin, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SummaryWidget } from "@/components/SummaryWidget";
@@ -99,12 +99,20 @@ const TripDetails = () => {
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <header className="mb-6">
-        <Button asChild variant="outline" className="mb-4">
-          <Link to="/dashboard">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Link>
-        </Button>
+        <div className="flex justify-between items-start">
+          <Button asChild variant="outline" className="mb-4">
+            <Link to="/dashboard">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Dashboard
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to={`/trip/${trip.id}/edit`}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit Trip
+            </Link>
+          </Button>
+        </div>
         <h1 className="text-3xl md:text-4xl font-bold">{trip.title}</h1>
         <div className="text-lg text-muted-foreground mt-2">
           <p>

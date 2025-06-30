@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import TripDetails from "./pages/TripDetails";
 import { Layout } from "./components/Layout";
 import NewTrip from "./pages/NewTrip";
+import EditTrip from "./pages/EditTrip";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/trip/new" element={<NewTrip />} />
             <Route path="/trip/:id" element={<TripDetails />} />
+            <Route path="/trip/:id/edit" element={<EditTrip />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
