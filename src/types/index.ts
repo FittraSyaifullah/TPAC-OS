@@ -33,6 +33,7 @@ export type ContactType = "Rescue" | "Local Authority" | "Embassy" | "Guide";
 export interface EmergencyContact {
   id: string;
   name: string;
-  contactNumber: string;
+  contact_number: string;
   type: ContactType;
+  trip_id?: string;
 }

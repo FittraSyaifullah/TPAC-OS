@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { EmergencyContact, ContactType } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,22 +29,9 @@ import {
   Flag,
   User,
 } from "lucide-react";
-
-const initialContacts: EmergencyContact[] = [
-  {
-    id: "c1",
-    name: "Mountain Rescue",
-    contactNumber: "+977 1 4411933",
-    type: "Rescue",
-  },
-  {
-    id: "c2",
-    name: "Local Police",
-    contactNumber: "100",
-    type: "Local Authority",
-  },
-  { id: "c3", name: "Lead Guide", contactNumber: "+977 9851012345", type: "Guide" },
-];
+import { supabase } from "@/integrations/supabase/client";
+import { showError, showSuccess } from "@/utils/toast";
+import { Skeleton } from "./ui/skeleton";
 
 const contactTypeIcons: Record<ContactType, React.ReactNode> = {
   Rescue: <Shield className="h-5 w-5 text-red-500" />,
@@ -55,29 +42,70 @@ const contactTypeIcons: Record<ContactType, React.ReactNode> = {
 
 const contactTypes: ContactType[] = ["Rescue", "Local Authority", "Embassy", "Guide"];
 
-export const EmergencyTab = () => {
-  const [contacts, setContacts] = useState<EmergencyContact[]>(initialContacts);
+interface EmergencyTabProps {
+  tripId: string;
+}
+
+export const EmergencyTab = ({ tripId }: EmergencyTabProps) => {
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<EmergencyContact | null>(null);
 
-  const handleSave = (formData: Omit<EmergencyContact, "id">) => {
-    if (editingContact) {
-      // Update existing contact
-      setContacts(
-        contacts.map((c) =>
-          c.id === editingContact.id ? { ...c, ...formData } : c,
-        ),
-      );
-    } else {
-      // Add new contact
-      const newContact: EmergencyContact = {
-        id: `c-${Date.now()}`,
-        ...formData,
-      };
-      setContacts([newContact, ...contacts]);
+  useEffect(() => {
+    const fetchContacts = async () => {
+      if (!tripId) return;
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("emergency_contacts")
+          .select("*")
+          .eq("trip_id", tripId)
+          .order("created_at", { ascending: true });
+
+        if (error) throw error;
+        setContacts(data as EmergencyContact[]);
+      } catch (error: any) {
+        showError("Failed to fetch emergency contacts.");
+        console.error("Error fetching contacts:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchContacts();
+  }, [tripId]);
+
+  const handleSave = async (formData: Omit<EmergencyContact, "id" | "trip_id">) => {
+    try {
+      if (editingContact) {
+        // Update existing contact
+        const { data, error } = await supabase
+          .from("emergency_contacts")
+          .update(formData)
+          .eq("id", editingContact.id)
+          .select()
+          .single();
+        if (error) throw error;
+        setContacts(
+          contacts.map((c) => (c.id === editingContact.id ? data : c)),
+        );
+        showSuccess("Contact updated.");
+      } else {
+        // Add new contact
+        const { data, error } = await supabase
+          .from("emergency_contacts")
+          .insert({ ...formData, trip_id: tripId })
+          .select()
+          .single();
+        if (error) throw error;
+        setContacts([data, ...contacts]);
+        showSuccess("Contact added.");
+      }
+      setIsDialogOpen(false);
+      setEditingContact(null);
+    } catch (error: any) {
+      showError("Failed to save contact.");
     }
-    setIsDialogOpen(false);
-    setEditingContact(null);
   };
 
   const handleEdit = (contact: EmergencyContact) => {
@@ -90,8 +118,15 @@ export const EmergencyTab = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setContacts(contacts.filter((c) => c.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase.from("emergency_contacts").delete().eq("id", id);
+      if (error) throw error;
+      setContacts(contacts.filter((c) => c.id !== id));
+      showSuccess("Contact removed.");
+    } catch (error) {
+      showError("Failed to remove contact.");
+    }
   };
 
   return (
@@ -120,41 +155,48 @@ export const EmergencyTab = () => {
         </Dialog>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {contacts.map((contact) => (
-            <div
-              key={contact.id}
-              className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-            >
-              <div className="flex items-center gap-4">
-                {contactTypeIcons[contact.type]}
-                <div>
-                  <p className="font-semibold">{contact.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {contact.contactNumber}
-                  </p>
+        {loading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-16 w-full" />
+            <Skeleton className="h-16 w-full" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {contacts.map((contact) => (
+              <div
+                key={contact.id}
+                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+              >
+                <div className="flex items-center gap-4">
+                  {contactTypeIcons[contact.type]}
+                  <div>
+                    <p className="font-semibold">{contact.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {contact.contact_number}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleEdit(contact)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(contact.id)}
+                    className="text-red-500 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleEdit(contact)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDelete(contact.id)}
-                  className="text-red-500 hover:text-red-600"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -162,20 +204,20 @@ export const EmergencyTab = () => {
 
 // Contact Form Sub-component
 interface ContactFormProps {
-  onSubmit: (data: Omit<EmergencyContact, "id">) => void;
+  onSubmit: (data: Omit<EmergencyContact, "id" | "trip_id">) => void;
   initialData?: EmergencyContact | null;
   onClose: () => void;
 }
 
 const ContactForm = ({ onSubmit, initialData, onClose }: ContactFormProps) => {
   const [name, setName] = useState(initialData?.name || "");
-  const [contactNumber, setContactNumber] = useState(initialData?.contactNumber || "");
+  const [contactNumber, setContactNumber] = useState(initialData?.contact_number || "");
   const [type, setType] = useState<ContactType>(initialData?.type || "Guide");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !contactNumber) return;
-    onSubmit({ name, contactNumber, type });
+    onSubmit({ name, contact_number: contactNumber, type });
   };
 
   return (
