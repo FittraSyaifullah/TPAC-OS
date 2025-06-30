@@ -21,6 +21,7 @@ export interface ItineraryItem {
 export interface Participant {
   id: string;
   name: string;
+  role?: string;
   trip_id?: string;
 }
 

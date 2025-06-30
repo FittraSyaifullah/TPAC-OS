@@ -15,11 +15,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, User, Users, Pencil } from "lucide-react";
 import { EmptyState } from "./EmptyState";
+import { Badge } from "./ui/badge";
 
 interface ParticipantsTabProps {
   participants: Participant[];
-  onAddParticipant: (name: string) => Promise<void>;
-  onUpdateParticipant: (id: string, name: string) => Promise<void>;
+  onAddParticipant: (name: string, role?: string) => Promise<void>;
+  onUpdateParticipant: (id: string, updates: { name: string; role?: string }) => Promise<void>;
   onRemoveParticipant: (id: string) => Promise<void>;
 }
 
@@ -31,26 +32,34 @@ export const ParticipantsTab = ({
 }: ParticipantsTabProps) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newParticipantName, setNewParticipantName] = useState("");
+  const [newParticipantRole, setNewParticipantRole] = useState("");
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
   const [updatedParticipantName, setUpdatedParticipantName] = useState("");
+  const [updatedParticipantRole, setUpdatedParticipantRole] = useState("");
 
   const handleAddParticipant = async () => {
-    await onAddParticipant(newParticipantName);
+    if (!newParticipantName.trim()) return;
+    await onAddParticipant(newParticipantName, newParticipantRole);
     setNewParticipantName("");
+    setNewParticipantRole("");
     setIsAddDialogOpen(false);
   };
 
   const handleOpenEditDialog = (participant: Participant) => {
     setEditingParticipant(participant);
     setUpdatedParticipantName(participant.name);
+    setUpdatedParticipantRole(participant.role || "");
     setIsEditDialogOpen(true);
   };
 
   const handleUpdateParticipant = async () => {
     if (editingParticipant && updatedParticipantName.trim()) {
-      await onUpdateParticipant(editingParticipant.id, updatedParticipantName.trim());
+      await onUpdateParticipant(editingParticipant.id, {
+        name: updatedParticipantName.trim(),
+        role: updatedParticipantRole.trim(),
+      });
       setIsEditDialogOpen(false);
       setEditingParticipant(null);
     }
@@ -84,6 +93,18 @@ export const ParticipantsTab = ({
                   placeholder="e.g., Alex Smith"
                 />
               </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="role" className="text-right">
+                  Role
+                </Label>
+                <Input
+                  id="role"
+                  value={newParticipantRole}
+                  onChange={(e) => setNewParticipantRole(e.target.value)}
+                  className="col-span-3"
+                  placeholder="e.g., Trip Leader (Optional)"
+                />
+              </div>
             </div>
             <DialogFooter>
               <DialogClose asChild>
@@ -104,7 +125,12 @@ export const ParticipantsTab = ({
               >
                 <div className="flex items-center gap-4">
                   <User className="h-5 w-5 text-muted-foreground" />
-                  <p className="font-semibold">{participant.name}</p>
+                  <div>
+                    <p className="font-semibold">{participant.name}</p>
+                    {participant.role && (
+                      <Badge variant="secondary" className="mt-1">{participant.role}</Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center">
                   <Button
@@ -148,6 +174,17 @@ export const ParticipantsTab = ({
                 id="edit-name"
                 value={updatedParticipantName}
                 onChange={(e) => setUpdatedParticipantName(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-role" className="text-right">
+                Role
+              </Label>
+              <Input
+                id="edit-role"
+                value={updatedParticipantRole}
+                onChange={(e) => setUpdatedParticipantRole(e.target.value)}
                 className="col-span-3"
               />
             </div>

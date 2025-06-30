@@ -60,44 +60,49 @@ export const useTripDetails = (tripId: string | undefined) => {
   }, [fetchData]);
 
   // Participant Handlers
-  const addParticipant = async (name: string) => {
+  const addParticipant = async (name: string, role?: string) => {
     if (!tripId || !name.trim()) return;
-    const { data, error } = await supabase.from("trip_participants").insert({ name: name.trim(), trip_id: tripId }).select().single();
+    const { data, error } = await supabase.from("trip_participants").insert({ name: name.trim(), role: role?.trim(), trip_id: tripId }).select().single();
     if (error) { showError("Failed to add participant."); return; }
     setParticipants(prev => [...prev, data as Participant]);
     showSuccess("Participant added.");
   };
 
-  const updateParticipant = async (id: string, newName: string) => {
-    if (!tripId || !newName.trim()) return;
+  const updateParticipant = async (id: string, updates: { name: string; role?: string }) => {
+    if (!tripId || !updates.name.trim()) return;
     const oldParticipant = participants.find(p => p.id === id);
     if (!oldParticipant) {
       showError("Participant not found.");
       return;
     }
     const oldName = oldParticipant.name;
+    const newName = updates.name.trim();
 
-    const { error: gearUpdateError } = await supabase
-      .from('trip_gear_items')
-      .update({ assigned_to: newName.trim() })
-      .eq('trip_id', tripId)
-      .eq('assigned_to', oldName);
+    if (newName !== oldName) {
+      const { error: gearUpdateError } = await supabase
+        .from('trip_gear_items')
+        .update({ assigned_to: newName })
+        .eq('trip_id', tripId)
+        .eq('assigned_to', oldName);
 
-    if (gearUpdateError) {
-      showError("Failed to update gear assignments.");
-      return;
+      if (gearUpdateError) {
+        showError("Failed to update gear assignments.");
+        return;
+      }
     }
 
-    const { data, error } = await supabase.from("trip_participants").update({ name: newName.trim() }).eq("id", id).select().single();
+    const { data, error } = await supabase.from("trip_participants").update({ name: newName, role: updates.role?.trim() }).eq("id", id).select().single();
     if (error) {
       showError("Failed to update participant.");
       return;
     }
 
     setParticipants(prev => prev.map(p => (p.id === id ? (data as Participant) : p)));
-    setGearItems(prev => prev.map(item => 
-      item.assigned_to === oldName ? { ...item, assigned_to: newName.trim() } : item
-    ));
+    if (newName !== oldName) {
+      setGearItems(prev => prev.map(item => 
+        item.assigned_to === oldName ? { ...item, assigned_to: newName } : item
+      ));
+    }
     showSuccess("Participant updated successfully.");
   };
 
