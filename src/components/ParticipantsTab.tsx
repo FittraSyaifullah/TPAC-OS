@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Participant } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,72 +14,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, User, Users } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
-import { Skeleton } from "./ui/skeleton";
 import { EmptyState } from "./EmptyState";
 
 interface ParticipantsTabProps {
-  tripId: string;
-  initialParticipants: Participant[];
-  onParticipantsChange: (participants: Participant[]) => void;
-  loading: boolean;
+  participants: Participant[];
+  onAddParticipant: (name: string) => Promise<void>;
+  onRemoveParticipant: (id: string) => Promise<void>;
 }
 
 export const ParticipantsTab = ({
-  tripId,
-  initialParticipants,
-  onParticipantsChange,
-  loading,
+  participants,
+  onAddParticipant,
+  onRemoveParticipant,
 }: ParticipantsTabProps) => {
-  const [participants, setParticipants] = useState<Participant[]>(initialParticipants);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newParticipantName, setNewParticipantName] = useState("");
 
-  useEffect(() => {
-    setParticipants(initialParticipants);
-  }, [initialParticipants]);
-
   const handleAddParticipant = async () => {
-    if (!newParticipantName.trim()) return;
-    const newParticipantData: Omit<Participant, "id"> = {
-      name: newParticipantName.trim(),
-      trip_id: tripId,
-    };
-
-    try {
-      const { data, error } = await supabase
-        .from("trip_participants")
-        .insert(newParticipantData)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const newParticipants = [...participants, data as Participant];
-      setParticipants(newParticipants);
-      onParticipantsChange(newParticipants);
-      setNewParticipantName("");
-      setIsAddDialogOpen(false);
-      showSuccess("Participant added.");
-    } catch (error: any) {
-      showError("Failed to add participant.");
-      console.error("Error adding participant:", error);
-    }
-  };
-
-  const handleRemoveParticipant = async (id: string) => {
-    try {
-      const { error } = await supabase.from("trip_participants").delete().eq("id", id);
-      if (error) throw error;
-
-      const newParticipants = participants.filter((p) => p.id !== id);
-      setParticipants(newParticipants);
-      onParticipantsChange(newParticipants);
-      showSuccess("Participant removed.");
-    } catch (error: any) {
-      showError("Failed to remove participant.");
-    }
+    await onAddParticipant(newParticipantName);
+    setNewParticipantName("");
+    setIsAddDialogOpen(false);
   };
 
   return (
@@ -121,13 +75,7 @@ export const ParticipantsTab = ({
         </Dialog>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-          </div>
-        ) : participants.length > 0 ? (
+        {participants.length > 0 ? (
           <div className="space-y-4">
             {participants.map((participant) => (
               <div
@@ -141,7 +89,7 @@ export const ParticipantsTab = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => handleRemoveParticipant(participant.id)}
+                  onClick={() => onRemoveParticipant(participant.id)}
                   className="text-red-500 hover:text-red-600"
                 >
                   <Trash2 className="h-4 w-4" />

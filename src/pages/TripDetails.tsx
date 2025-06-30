@@ -14,7 +14,8 @@ import { useTripDetails } from "@/hooks/useTripDetails";
 
 const TripDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const { trip, participants, loading, setParticipants } = useTripDetails(id);
+  const { trip, participants, loading, addParticipant, removeParticipant } =
+    useTripDetails(id);
   const [gearCounts, setGearCounts] = useState({ packed: 0, total: 0 });
 
   if (loading) {
@@ -101,10 +102,9 @@ const TripDetails = () => {
           </TabsContent>
           <TabsContent value="participants" className="mt-4">
             <ParticipantsTab
-              tripId={trip.id}
-              initialParticipants={participants}
-              onParticipantsChange={setParticipants}
-              loading={loading}
+              participants={participants}
+              onAddParticipant={addParticipant}
+              onRemoveParticipant={removeParticipant}
             />
           </TabsContent>
           <TabsContent value="emergency" className="mt-4">
