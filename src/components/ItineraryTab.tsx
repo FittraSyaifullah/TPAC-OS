@@ -36,8 +36,7 @@ const ItineraryDayForm = ({ item, onUpdateItem, onRemoveItem }: ItineraryDayForm
   }, [item]);
 
   const handleBlur = (field: 'location' | 'activity', value: string) => {
-    const originalItem = item;
-    if (originalItem && originalItem[field] !== value) {
+    if (value !== item[field]) {
       onUpdateItem(item.id, { [field]: value });
     }
   };
@@ -94,12 +93,6 @@ export const ItineraryTab = ({
   onUpdateItem,
   onRemoveItem,
 }: ItineraryTabProps) => {
-  const [localItinerary, setLocalItinerary] = useState(itinerary);
-
-  useEffect(() => {
-    setLocalItinerary(itinerary);
-  }, [itinerary]);
-
   return (
     <Card>
       <CardHeader>
@@ -107,13 +100,13 @@ export const ItineraryTab = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {localItinerary.length > 0 ? (
+          {itinerary.length > 0 ? (
             <Accordion
               type="multiple"
               className="w-full"
-              defaultValue={localItinerary.length > 0 ? [localItinerary[0].id] : []}
+              defaultValue={itinerary.length > 0 ? [itinerary[0].id] : []}
             >
-              {localItinerary.map((item) => (
+              {itinerary.map((item) => (
                 <AccordionItem key={item.id} value={item.id}>
                   <AccordionTrigger>
                     <span className="font-semibold text-left">
