@@ -19,6 +19,11 @@ import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { useState, useEffect } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
+import { MapPreview } from "./MapPreview";
+
+const MAPBOX_API_KEY = "pk.eyJ1IjoiZml0dHJhLXN5YWlmdWxsYWgiLCJhIjoiY204c2x2ZWRsMDFnZTJrbjF1MXpxeng4OSJ9.RYNyNDntRWMhdri3jz5W_g";
 
 export const formSchema = z
   .object({
@@ -42,6 +47,16 @@ interface TripFormProps {
 }
 
 export const TripForm = ({ form, onSubmit, isSubmitting, buttonText }: TripFormProps) => {
+  const locationValue = form.watch("location");
+  const [locationSearch, setLocationSearch] = useState(locationValue || "");
+  const debouncedLocation = useDebounce(locationSearch, 500);
+
+  useEffect(() => {
+    if (locationValue) {
+      setLocationSearch(locationValue);
+    }
+  }, [locationValue]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -65,12 +80,24 @@ export const TripForm = ({ form, onSubmit, isSubmitting, buttonText }: TripFormP
             <FormItem>
               <FormLabel>Location</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Nepal" {...field} />
+                <Input
+                  placeholder="e.g., Nepal"
+                  {...field}
+                  onChange={(e) => {
+                    field.onChange(e);
+                    setLocationSearch(e.target.value);
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+        
+        {debouncedLocation && (
+          <MapPreview location={debouncedLocation} apiKey={MAPBOX_API_KEY} />
+        )}
+
         <FormField
           control={form.control}
           name="startDate"
