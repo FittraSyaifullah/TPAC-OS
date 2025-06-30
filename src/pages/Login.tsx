@@ -1,25 +1,40 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { MountainSnow } from "lucide-react";
-import { Auth } from '@supabase/auth-ui-react';
-import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { supabase } from "@/integrations/supabase/client";
+import { MountainSnow, KeyRound } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { showError } from "@/utils/toast";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { session, loading } = useAuth();
+  const { login, isAuthenticated, loading } = useAuth();
+  const [accessCode, setAccessCode] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && session) {
+    if (!loading && isAuthenticated) {
       navigate("/dashboard");
     }
-  }, [session, loading, navigate]);
+  }, [isAuthenticated, loading, navigate]);
 
-  if (loading) {
-    return null; // or a loading spinner
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    const success = login(accessCode);
+    if (success) {
+      navigate("/dashboard");
+    } else {
+      showError("Invalid access code. Please try again.");
+      setAccessCode("");
+    }
+    setIsSubmitting(false);
+  };
+
+  if (loading || isAuthenticated) {
+    return null; // Or a loading spinner
   }
 
   return (
@@ -41,22 +56,33 @@ const LoginPage = () => {
               Welcome to Trailstack
             </CardTitle>
             <CardDescription>
-              Sign in to continue
+              Enter your access code to continue
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Auth
-              supabaseClient={supabase}
-              appearance={{ theme: ThemeSupa }}
-              providers={['google']}
-              theme="light"
-            />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="access-code">Access Code</Label>
+                <div className="relative">
+                  <KeyRound className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="access-code"
+                    type="password"
+                    placeholder="******"
+                    value={accessCode}
+                    onChange={(e) => setAccessCode(e.target.value)}
+                    required
+                    className="pl-8"
+                  />
+                </div>
+              </div>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Verifying..." : "Enter"}
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </main>
-      <footer className="p-4 bg-muted/40">
-        {/* "Made with Dyad" removed */}
-      </footer>
     </div>
   );
 };

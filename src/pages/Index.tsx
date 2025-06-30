@@ -45,7 +45,7 @@ const Index = () => {
           </Link>
           <Button asChild>
             <Link to="/login">
-              Get Started <ArrowRight className="ml-2 h-4 w-4" />
+              Enter App <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
         </div>

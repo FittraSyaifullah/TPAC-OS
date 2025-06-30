@@ -6,13 +6,13 @@ import { Skeleton } from "./ui/skeleton";
 
 export const Layout = () => {
   const navigate = useNavigate();
-  const { session, loading } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading && !session) {
+    if (!loading && !isAuthenticated) {
       navigate("/login");
     }
-  }, [session, loading, navigate]);
+  }, [isAuthenticated, loading, navigate]);
 
   if (loading) {
     return (
@@ -25,8 +25,8 @@ export const Layout = () => {
     );
   }
 
-  if (!session) {
-    return null;
+  if (!isAuthenticated) {
+    return null; // Avoid rendering children while redirecting
   }
 
   return (
