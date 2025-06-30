@@ -16,6 +16,9 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import PrintableTripReport from "@/components/PrintableTripReport";
 import { DocumentsTab } from "@/components/DocumentsTab";
+import { MapPreview } from "@/components/MapPreview";
+
+const MAPBOX_API_KEY = "pk.eyJ1IjoiZml0dHJhLXN5YWlmdWxsYWgiLCJhIjoiY204c2x2ZWRsMDFnZTJrbjF1MXpxeng4OSJ9.RYNyNDntRWMhdri3jz5W_g";
 
 const TripDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -140,7 +143,7 @@ const TripDetails = () => {
       </header>
 
       <main className="space-y-6">
-        <section className="grid gap-4 md:grid-cols-2">
+        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <SummaryWidget
             title="Participants"
             icon={<Users className="h-4 w-4 text-muted-foreground" />}
@@ -156,6 +159,9 @@ const TripDetails = () => {
             </div>
             <Progress value={gearProgress} className="mt-2" />
           </SummaryWidget>
+          <div className="lg:col-span-1 rounded-lg overflow-hidden h-full min-h-[150px]">
+             <MapPreview location={trip.location} apiKey={MAPBOX_API_KEY} />
+          </div>
         </section>
 
         <Tabs defaultValue="itinerary" className="w-full">
