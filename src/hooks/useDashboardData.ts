@@ -5,10 +5,6 @@ import { showError } from "@/utils/toast";
 
 export const useDashboardData = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [stats, setStats] = useState({
-    totalParticipants: 0,
-    totalGearItems: 0,
-  });
   const [loading, setLoading] = useState(true);
 
   const fetchDashboardData = async () => {
@@ -30,14 +26,6 @@ export const useDashboardData = () => {
           participant_count: event.participant_count,
         }));
         setTrips(formattedTrips);
-
-        const totalParticipants = formattedTrips.reduce((sum, trip) => sum + (trip.participant_count || 0), 0);
-        const totalGearItems = formattedTrips.reduce((sum, trip) => sum + (trip.gear_total || 0), 0);
-
-        setStats({
-          totalParticipants,
-          totalGearItems,
-        });
       }
     } catch (error: any) {
       showError("Failed to fetch dashboard data.");
@@ -55,5 +43,5 @@ export const useDashboardData = () => {
     setTrips((prevTrips) => prevTrips.filter((trip) => trip.id !== tripId));
   };
 
-  return { trips, stats, loading, removeTrip };
+  return { trips, loading, removeTrip };
 };

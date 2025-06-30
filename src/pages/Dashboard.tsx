@@ -13,7 +13,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { Input } from "@/components/ui/input";
 
 const Dashboard = () => {
-  const { trips, stats, loading, removeTrip } = useDashboardData();
+  const { trips, loading, removeTrip } = useDashboardData();
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredTrips = useMemo(() => {
@@ -26,6 +26,17 @@ const Dashboard = () => {
         trip.location.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [trips, searchTerm]);
+
+  const stats = useMemo(() => {
+    return filteredTrips.reduce(
+      (acc, trip) => {
+        acc.totalParticipants += trip.participant_count || 0;
+        acc.totalGearItems += trip.gear_total || 0;
+        return acc;
+      },
+      { totalParticipants: 0, totalGearItems: 0 },
+    );
+  }, [filteredTrips]);
 
   const handleDeleteTrip = async (id: string) => {
     try {
@@ -118,7 +129,7 @@ const Dashboard = () => {
               title="Total Trips"
               icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
             >
-              <div className="text-2xl font-bold">{trips.length}</div>
+              <div className="text-2xl font-bold">{filteredTrips.length}</div>
             </SummaryWidget>
             <SummaryWidget
               title="Total Participants"
