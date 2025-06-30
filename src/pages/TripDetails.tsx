@@ -8,71 +8,14 @@ import { ItineraryTab } from "@/components/ItineraryTab";
 import { GearTab } from "@/components/GearTab";
 import { ParticipantsTab } from "@/components/ParticipantsTab";
 import { EmergencyTab } from "@/components/EmergencyTab";
-import { useEffect, useState } from "react";
-import { Trip, Participant } from "@/types";
-import { supabase } from "@/integrations/supabase/client";
-import { showError, showSuccess } from "@/utils/toast";
+import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTripDetails } from "@/hooks/useTripDetails";
 
 const TripDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const [trip, setTrip] = useState<Trip | null>(null);
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { trip, participants, loading, setParticipants } = useTripDetails(id);
   const [gearCounts, setGearCounts] = useState({ packed: 0, total: 0 });
-
-  useEffect(() => {
-    const fetchTripAndParticipants = async () => {
-      if (!id) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      try {
-        // Fetch trip details
-        const { data: tripData, error: tripError } = await supabase
-          .from("events")
-          .select("id, title, date, end_date, location")
-          .eq("id", id)
-          .single();
-
-        if (tripError) throw tripError;
-
-        if (tripData) {
-          setTrip({
-            id: tripData.id,
-            title: tripData.title,
-            startDate: new Date(tripData.date),
-            endDate: new Date(tripData.end_date),
-            location: tripData.location,
-          });
-        }
-
-        // Fetch participants
-        const { data: participantsData, error: participantsError } =
-          await supabase
-            .from("trip_participants")
-            .select("id, name")
-            .eq("trip_id", id)
-            .order("created_at", { ascending: true });
-
-        if (participantsError) throw participantsError;
-        setParticipants(participantsData as Participant[]);
-      } catch (error: any) {
-        showError("Failed to fetch trip details.");
-        console.error("Error fetching data:", error);
-        setTrip(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTripAndParticipants();
-  }, [id]);
-
-  const handleParticipantsChange = (newParticipants: Participant[]) => {
-    setParticipants(newParticipants);
-  };
 
   if (loading) {
     return (
@@ -160,7 +103,7 @@ const TripDetails = () => {
             <ParticipantsTab
               tripId={trip.id}
               initialParticipants={participants}
-              onParticipantsChange={handleParticipantsChange}
+              onParticipantsChange={setParticipants}
               loading={loading}
             />
           </TabsContent>
