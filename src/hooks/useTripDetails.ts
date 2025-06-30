@@ -69,10 +69,37 @@ export const useTripDetails = (tripId: string | undefined) => {
   };
 
   const removeParticipant = async (id: string) => {
+    if (!tripId) return;
+    const participantToRemove = participants.find(p => p.id === id);
+    if (!participantToRemove) {
+      showError("Could not find participant to remove.");
+      return;
+    }
+
+    const { error: gearUpdateError } = await supabase
+      .from('trip_gear_items')
+      .update({ assigned_to: 'unassigned' })
+      .eq('trip_id', tripId)
+      .eq('assigned_to', participantToRemove.name);
+
+    if (gearUpdateError) {
+      showError('Failed to unassign gear from the participant.');
+      return;
+    }
+
     const { error } = await supabase.from("trip_participants").delete().eq("id", id);
-    if (error) { showError("Failed to remove participant."); return; }
+    if (error) { 
+      showError("Failed to remove participant."); 
+      return; 
+    }
+
     setParticipants(prev => prev.filter(p => p.id !== id));
-    showSuccess("Participant removed.");
+    setGearItems(prev => prev.map(item => 
+      item.assigned_to === participantToRemove.name 
+        ? { ...item, assigned_to: 'unassigned' } 
+        : item
+    ));
+    showSuccess("Participant removed and their gear has been unassigned.");
   };
 
   // Itinerary Handlers
