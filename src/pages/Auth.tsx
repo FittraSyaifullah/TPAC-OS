@@ -20,6 +20,7 @@ const AuthPage = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { session, loading } = useAuth();
   const navigate = useNavigate();
@@ -34,7 +35,15 @@ const AuthPage = () => {
     setIsSubmitting(true);
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName,
+            },
+          },
+        });
         if (error) throw error;
         showSuccess("Success! Please check your email to verify your account.");
       } else {
@@ -73,6 +82,18 @@ const AuthPage = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
+          {isSignUp && (
+            <div className="grid gap-2">
+              <Label htmlFor="full-name">Full Name</Label>
+              <Input
+                id="full-name"
+                placeholder="John Doe"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            </div>
+          )}
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <Input

@@ -10,6 +10,7 @@ import TripDetails from "./pages/TripDetails";
 import AuthPage from "./pages/Auth";
 import { Layout } from "./components/Layout";
 import { AuthProvider } from "./components/AuthProvider";
+import NewTrip from "./pages/NewTrip";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
 
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/trip/new" element={<NewTrip />} />
               <Route path="/trip/:id" element={<TripDetails />} />
             </Route>
 
