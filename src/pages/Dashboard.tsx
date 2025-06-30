@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { TripCard } from "@/components/TripCard";
 import { Plus, Calendar, Users, Package, Search } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useEffect, useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Trip } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
@@ -116,19 +116,24 @@ const Dashboard = () => {
           <section className="mb-8 grid gap-4 md:grid-cols-3">
             <SummaryWidget
               title="Total Trips"
-              value={trips.length}
               icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
-            />
+            >
+              <div className="text-2xl font-bold">{trips.length}</div>
+            </SummaryWidget>
             <SummaryWidget
               title="Total Participants"
-              value={stats.totalParticipants}
               icon={<Users className="h-4 w-4 text-muted-foreground" />}
-            />
+            >
+              <div className="text-2xl font-bold">
+                {stats.totalParticipants}
+              </div>
+            </SummaryWidget>
             <SummaryWidget
               title="Total Gear Items"
-              value={stats.totalGearItems}
               icon={<Package className="h-4 w-4 text-muted-foreground" />}
-            />
+            >
+              <div className="text-2xl font-bold">{stats.totalGearItems}</div>
+            </SummaryWidget>
           </section>
         )}
 

@@ -10,6 +10,7 @@ import { ParticipantsTab } from "@/components/ParticipantsTab";
 import { EmergencyTab } from "@/components/EmergencyTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTripDetails } from "@/hooks/useTripDetails";
+import { Progress } from "@/components/ui/progress";
 
 const TripDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -54,7 +55,11 @@ const TripDetails = () => {
 
   const formattedStartDate = format(trip.startDate, "MMM d, yyyy");
   const formattedEndDate = format(trip.endDate, "MMM d, yyyy");
-  const gearPackedCount = gearItems.filter(item => item.status === "Packed").length;
+  const gearPackedCount = gearItems.filter(
+    (item) => item.status === "Packed",
+  ).length;
+  const gearProgress =
+    gearItems.length > 0 ? (gearPackedCount / gearItems.length) * 100 : 0;
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
@@ -89,14 +94,19 @@ const TripDetails = () => {
         <section className="grid gap-4 md:grid-cols-2">
           <SummaryWidget
             title="Participants"
-            value={participants.length}
             icon={<Users className="h-4 w-4 text-muted-foreground" />}
-          />
+          >
+            <div className="text-2xl font-bold">{participants.length}</div>
+          </SummaryWidget>
           <SummaryWidget
             title="Gear Packed"
-            value={`${gearPackedCount} / ${gearItems.length}`}
             icon={<Package className="h-4 w-4 text-muted-foreground" />}
-          />
+          >
+            <div className="text-2xl font-bold">
+              {gearPackedCount} / {gearItems.length}
+            </div>
+            <Progress value={gearProgress} className="mt-2" />
+          </SummaryWidget>
         </section>
 
         <Tabs defaultValue="itinerary" className="w-full">
