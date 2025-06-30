@@ -1,32 +1,45 @@
 import { Button } from "@/components/ui/button";
 import { TripCard } from "@/components/TripCard";
-import { Plus } from "lucide-react";
+import { Plus, Calendar, Users, Package } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Trip } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SummaryWidget } from "@/components/SummaryWidget";
 
 const Dashboard = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalParticipants: 0,
+    totalGearItems: 0,
+  });
 
   useEffect(() => {
-    const fetchTrips = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("events")
-          .select("id, title, date, end_date, location")
-          .order("created_at", { ascending: false });
+        const [tripsRes, participantsRes, gearRes] = await Promise.all([
+          supabase
+            .from("events")
+            .select("id, title, date, end_date, location")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("trip_participants")
+            .select("id", { count: "exact", head: true }),
+          supabase
+            .from("trip_gear_items")
+            .select("id", { count: "exact", head: true }),
+        ]);
 
-        if (error) {
-          throw error;
-        }
+        if (tripsRes.error) throw tripsRes.error;
+        if (participantsRes.error) throw participantsRes.error;
+        if (gearRes.error) throw gearRes.error;
 
-        if (data) {
-          const formattedTrips: Trip[] = data.map((event) => ({
+        if (tripsRes.data) {
+          const formattedTrips: Trip[] = tripsRes.data.map((event) => ({
             id: event.id,
             title: event.title,
             startDate: new Date(event.date),
@@ -35,15 +48,20 @@ const Dashboard = () => {
           }));
           setTrips(formattedTrips);
         }
+
+        setStats({
+          totalParticipants: participantsRes.count ?? 0,
+          totalGearItems: gearRes.count ?? 0,
+        });
       } catch (error: any) {
-        showError("Failed to fetch your trips.");
-        console.error("Error fetching trips:", error);
+        showError("Failed to fetch dashboard data.");
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTrips();
+    fetchData();
   }, []);
 
   const handleDeleteTrip = async (id: string) => {
@@ -62,7 +80,7 @@ const Dashboard = () => {
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <header className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold">Upcoming Trips</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
         <Button asChild>
           <Link to="/trip/new">
             <Plus className="mr-2 h-4 w-4" />
@@ -73,24 +91,58 @@ const Dashboard = () => {
 
       <main>
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-48 w-full" />
-            ))}
-          </div>
-        ) : trips.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {trips.map((trip) => (
-              <TripCard key={trip.id} trip={trip} onDelete={handleDeleteTrip} />
-            ))}
-          </div>
+          <>
+            <section className="mb-8 grid gap-4 md:grid-cols-3">
+              <Skeleton className="h-28 w-full" />
+              <Skeleton className="h-28 w-full" />
+              <Skeleton className="h-28 w-full" />
+            </section>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-48 w-full" />
+              ))}
+            </div>
+          </>
         ) : (
-          <div className="text-center py-12 border-2 border-dashed rounded-lg">
-            <h2 className="text-xl font-semibold">No trips yet!</h2>
-            <p className="text-muted-foreground mt-2">
-              Click "New Trip" to plan your first adventure.
-            </p>
-          </div>
+          <>
+            <section className="mb-8 grid gap-4 md:grid-cols-3">
+              <SummaryWidget
+                title="Total Trips"
+                value={trips.length}
+                icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
+              />
+              <SummaryWidget
+                title="Total Participants"
+                value={stats.totalParticipants}
+                icon={<Users className="h-4 w-4 text-muted-foreground" />}
+              />
+              <SummaryWidget
+                title="Total Gear Items"
+                value={stats.totalGearItems}
+                icon={<Package className="h-4 w-4 text-muted-foreground" />}
+              />
+            </section>
+
+            <h2 className="text-2xl font-bold mb-4">Upcoming Trips</h2>
+            {trips.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {trips.map((trip) => (
+                  <TripCard
+                    key={trip.id}
+                    trip={trip}
+                    onDelete={handleDeleteTrip}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                <h2 className="text-xl font-semibold">No trips yet!</h2>
+                <p className="text-muted-foreground mt-2">
+                  Click "New Trip" to plan your first adventure.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
