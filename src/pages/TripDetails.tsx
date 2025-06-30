@@ -1,6 +1,6 @@
 import { Link, useParams, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Users, Package, MapPin, Pencil, Download } from "lucide-react";
+import { ArrowLeft, Users, Package, MapPin, Pencil, Download, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SummaryWidget } from "@/components/SummaryWidget";
@@ -17,6 +17,7 @@ import html2canvas from "html2canvas";
 import PrintableTripReport from "@/components/PrintableTripReport";
 import { DocumentsTab } from "@/components/DocumentsTab";
 import { MapPreview } from "@/components/MapPreview";
+import { showSuccess } from "@/utils/toast";
 
 const MAPBOX_API_KEY = "pk.eyJ1IjoiZml0dHJhLXN5YWlmdWxsYWgiLCJhIjoiY204c2x2ZWRsMDFnZTJrbjF1MXpxeng4OSJ9.RYNyNDntRWMhdri3jz5W_g";
 
@@ -81,6 +82,13 @@ const TripDetails = () => {
     setIsExporting(false);
   };
 
+  const handleShare = () => {
+    if (!trip) return;
+    const shareUrl = `${window.location.origin}/share/${trip.id}`;
+    navigator.clipboard.writeText(shareUrl);
+    showSuccess("Share link copied to clipboard!");
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto p-4 md:p-6 lg:p-8 space-y-6">
@@ -119,6 +127,10 @@ const TripDetails = () => {
             </Link>
           </Button>
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleShare}>
+              <Share2 className="mr-2 h-4 w-4" />
+              Share
+            </Button>
             <Button asChild variant="outline">
               <Link to={`/trip/${trip.id}/edit`}>
                 <Pencil className="mr-2 h-4 w-4" />

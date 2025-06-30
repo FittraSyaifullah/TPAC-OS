@@ -13,6 +13,7 @@ import NewTrip from "./pages/NewTrip";
 import EditTrip from "./pages/EditTrip";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthProvider } from "./components/AuthProvider";
+import ShareTrip from "./pages/ShareTrip";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/share/:id" element={<ShareTrip />} />
 
               <Route element={<Layout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
