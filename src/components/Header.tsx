@@ -2,13 +2,19 @@ import { Button } from "@/components/ui/button";
 import { MountainSnow, LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
+import { supabase } from "@/integrations/supabase/client";
+import { showError } from "@/utils/toast";
 
 export const Header = () => {
   const navigate = useNavigate();
 
-  const handleLogOff = () => {
-    sessionStorage.removeItem("isAuthenticated");
-    navigate("/login");
+  const handleLogOff = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      showError("Failed to log out.");
+    } else {
+      navigate("/login");
+    }
   };
 
   return (

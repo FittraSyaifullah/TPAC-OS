@@ -1,46 +1,30 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { MountainSnow } from "lucide-react";
-import { showError } from "@/utils/toast";
-
-const ACCESS_CODE = "123456";
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const [code, setCode] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { session, loading } = useAuth();
 
   useEffect(() => {
-    // If user is already authenticated, redirect to dashboard
-    if (sessionStorage.getItem("isAuthenticated")) {
+    if (!loading && session) {
       navigate("/dashboard");
     }
-  }, [navigate]);
+  }, [session, loading, navigate]);
 
-  const handleLogin = () => {
-    setIsSubmitting(true);
-    if (code === ACCESS_CODE) {
-      sessionStorage.setItem("isAuthenticated", "true");
-      navigate("/dashboard");
-    } else {
-      showError("Invalid access code. Please try again.");
-      setIsSubmitting(false);
-    }
-  };
+  if (loading) {
+    return null; // or a loading spinner
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
-       <header className="absolute top-0 left-0 right-0 p-4">
+      <header className="absolute top-0 left-0 right-0 p-4">
         <Button asChild variant="outline">
           <Link to="/">
             &larr; Back to Home
@@ -57,28 +41,16 @@ const LoginPage = () => {
               Welcome to Trailstack
             </CardTitle>
             <CardDescription>
-              Please enter the access code to continue.
+              Sign in to continue
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="access-code">Access Code</Label>
-              <Input
-                id="access-code"
-                type="password"
-                placeholder="******"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-              />
-            </div>
-            <Button
-              className="w-full"
-              onClick={handleLogin}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Verifying..." : "Enter"}
-            </Button>
+          <CardContent>
+            <Auth
+              supabaseClient={supabase}
+              appearance={{ theme: ThemeSupa }}
+              providers={['google']}
+              theme="light"
+            />
           </CardContent>
         </Card>
       </main>

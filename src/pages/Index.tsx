@@ -65,7 +65,7 @@ const Index = () => {
             </p>
             <Button size="lg" asChild>
               <Link to="/login">
-                Enter Access Code
+                Start Planning
               </Link>
             </Button>
           </div>
