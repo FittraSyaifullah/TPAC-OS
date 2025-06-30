@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Trip, Participant, ItineraryItem, GearItem, EmergencyContact } from '@/types';
+import { Trip, Participant, ItineraryItem, GearItem, EmergencyContact, TripDocument } from '@/types';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MountainSnow, Users, Package, MapPin, CalendarDays, ShieldAlert } from 'lucide-react';
+import { MountainSnow, Users, Package, MapPin, CalendarDays, ShieldAlert, FileText, Download } from 'lucide-react';
 import { MapPreview } from '@/components/MapPreview';
+import { Button } from '@/components/ui/button';
+import { showSuccess, showError } from '@/utils/toast';
 
 const MAPBOX_API_KEY = "pk.eyJ1IjoiZml0dHJhLXN5YWlmdWxsYWgiLCJhIjoiY204c2x2ZWRsMDFnZTJrbjF1MXpxeng4OSJ9.RYNyNDntRWMhdri3jz5W_g";
 
@@ -17,6 +19,7 @@ const ShareTrip = () => {
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([]);
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
+  const [documents, setDocuments] = useState<TripDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,17 +48,19 @@ const ShareTrip = () => {
           endDate: new Date(tripData.end_date),
         } as Trip);
 
-        const [participantsRes, itineraryRes, gearRes, contactsRes] = await Promise.all([
+        const [participantsRes, itineraryRes, gearRes, contactsRes, documentsRes] = await Promise.all([
           supabase.from("trip_participants").select("*").eq("trip_id", id).order("created_at"),
           supabase.from("itinerary_items").select("*").eq("trip_id", id).order("day"),
           supabase.from("trip_gear_items").select("*").eq("trip_id", id).order("created_at"),
           supabase.from("emergency_contacts").select("*").eq("trip_id", id).order("created_at"),
+          supabase.from("trip_documents").select("*").eq("trip_id", id).order("created_at"),
         ]);
 
         setParticipants(participantsRes.data || []);
         setItinerary(itineraryRes.data || []);
         setGearItems(gearRes.data || []);
         setEmergencyContacts(contactsRes.data || []);
+        setDocuments(documentsRes.data || []);
 
       } catch (err: any) {
         setError(err.message || "Failed to load trip details.");
@@ -66,6 +71,24 @@ const ShareTrip = () => {
 
     fetchTripData();
   }, [id]);
+
+  const handleDownload = async (filePath: string, fileName: string) => {
+    try {
+      const { data, error } = await supabase.storage.from('trip_documents').download(filePath);
+      if (error) throw error;
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showSuccess("Download started.");
+    } catch (error: any) {
+      showError(error.message || "Failed to download file.");
+    }
+  };
 
   if (loading) {
     return (
@@ -141,6 +164,24 @@ const ShareTrip = () => {
                     {gearItems.map(item => <li key={item.id}>{item.name} {item.assigned_to && item.assigned_to !== 'unassigned' ? `(${item.assigned_to})` : ''}</li>)}
                   </ul>
                 ) : <p className="text-muted-foreground">No gear listed yet.</p>}
+              </CardContent>
+            </Card>
+             {/* Documents */}
+            <Card>
+              <CardHeader><CardTitle className="flex items-center"><FileText className="mr-2 h-5 w-5" /> Documents</CardTitle></CardHeader>
+              <CardContent>
+                {documents.length > 0 ? (
+                  <div className="space-y-2">
+                    {documents.map(doc => (
+                      <div key={doc.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
+                        <span className="font-medium truncate" title={doc.name}>{doc.name}</span>
+                        <Button variant="ghost" size="icon" onClick={() => handleDownload(doc.file_path, doc.name)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : <p className="text-muted-foreground">No documents shared for this trip.</p>}
               </CardContent>
             </Card>
           </div>
