@@ -99,8 +99,8 @@ const TripDetails = () => {
     return <Navigate to="/404" replace />;
   }
 
-  const formattedStartDate = format(trip.startDate, "MMM d, yyyy");
-  const formattedEndDate = format(trip.endDate, "MMM d, yyyy");
+  const formattedStartDate = format(new Date(trip.startDate), "MMM d, yyyy");
+  const formattedEndDate = format(new Date(trip.endDate), "MMM d, yyyy");
   const gearPackedCount = gearItems.filter(
     (item) => item.status === "Packed",
   ).length;
@@ -143,24 +143,26 @@ const TripDetails = () => {
       </header>
 
       <main className="space-y-6">
-        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <SummaryWidget
-            title="Participants"
-            icon={<Users className="h-4 w-4 text-muted-foreground" />}
-          >
-            <div className="text-2xl font-bold">{participants.length}</div>
-          </SummaryWidget>
-          <SummaryWidget
-            title="Gear Packed"
-            icon={<Package className="h-4 w-4 text-muted-foreground" />}
-          >
-            <div className="text-2xl font-bold">
-              {gearPackedCount} / {gearItems.length}
-            </div>
-            <Progress value={gearProgress} className="mt-2" />
-          </SummaryWidget>
-          <div className="lg:col-span-1 rounded-lg overflow-hidden h-full min-h-[150px]">
-             <MapPreview location={trip.location} apiKey={MAPBOX_API_KEY} />
+        <section className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-6">
+            <SummaryWidget
+              title="Participants"
+              icon={<Users className="h-4 w-4 text-muted-foreground" />}
+            >
+              <div className="text-2xl font-bold">{participants.length}</div>
+            </SummaryWidget>
+            <SummaryWidget
+              title="Gear Packed"
+              icon={<Package className="h-4 w-4 text-muted-foreground" />}
+            >
+              <div className="text-2xl font-bold">
+                {gearPackedCount} / {gearItems.length}
+              </div>
+              <Progress value={gearProgress} className="mt-2" />
+            </SummaryWidget>
+          </div>
+          <div className="rounded-lg overflow-hidden h-full min-h-[300px] md:min-h-0">
+            <MapPreview location={trip.location} apiKey={MAPBOX_API_KEY} />
           </div>
         </section>
 
@@ -223,6 +225,7 @@ const TripDetails = () => {
           itinerary={itinerary}
           gearItems={gearItems}
           emergencyContacts={emergencyContacts}
+          documents={documents}
         />
       </div>
     </div>
