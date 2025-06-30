@@ -1,183 +1,161 @@
-import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { useState, useEffect } from "react";
-import { useDebounce } from "@/hooks/useDebounce";
+import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/DatePicker";
+import { supabase } from "@/integrations/supabase/client";
+import { Trip } from "@/types";
+import { showError, showSuccess } from "@/utils/toast";
 import { MapPreview } from "./MapPreview";
-
-const MAPBOX_API_KEY = "pk.eyJ1IjoiZml0dHJhLXN5YWlmdWxsYWgiLCJhIjoiY204c2x2ZWRsMDFnZTJrbjF1MXpxeng4OSJ9.RYNyNDntRWMhdri3jz5W_g";
-
-export const formSchema = z
-  .object({
-    title: z.string().min(2, { message: "Title must be at least 2 characters." }),
-    location: z
-      .string()
-      .min(2, { message: "Location must be at least 2 characters." }),
-    startDate: z.date({ required_error: "A start date is required." }),
-    endDate: z.date({ required_error: "An end date is required." }),
-  })
-  .refine((data) => data.endDate >= data.startDate, {
-    message: "End date cannot be before start date.",
-    path: ["endDate"],
-  });
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface TripFormProps {
-  form: ReturnType<typeof useForm<z.infer<typeof formSchema>>>;
-  onSubmit: (values: z.infer<typeof formSchema>) => void;
-  isSubmitting: boolean;
-  buttonText: string;
+  trip?: Trip;
+  apiKey: string;
 }
 
-export const TripForm = ({ form, onSubmit, isSubmitting, buttonText }: TripFormProps) => {
-  const locationValue = form.watch("location");
-  const [locationSearch, setLocationSearch] = useState(locationValue || "");
-  const debouncedLocation = useDebounce(locationSearch, 500);
+export const TripForm = ({ trip, apiKey }: TripFormProps) => {
+  const navigate = useNavigate();
+  const [title, setTitle] = useState(trip?.title || "");
+  const [location, setLocation] = useState(trip?.location || "");
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    trip?.startDate ? new Date(trip.startDate) : undefined
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    trip?.endDate ? new Date(trip.endDate) : undefined
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (locationValue) {
-      setLocationSearch(locationValue);
+  const debouncedLocation = useDebounce(location, 500);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !location || !startDate || !endDate) {
+      showError("Please fill out all fields.");
+      return;
     }
-  }, [locationValue]);
+    if (startDate > endDate) {
+      showError("End date must be after start date.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const tripData = {
+      title,
+      location,
+      date: startDate.toISOString(),
+      end_date: endDate.toISOString(),
+    };
+
+    let result;
+    if (trip) {
+      result = await supabase
+        .from("events")
+        .update(tripData)
+        .eq("id", trip.id)
+        .select()
+        .single();
+    } else {
+      result = await supabase
+        .from("events")
+        .insert(tripData)
+        .select()
+        .single();
+    }
+
+    setIsSubmitting(false);
+
+    if (result.error) {
+      showError(`Failed to ${trip ? "update" : "create"} trip.`);
+      console.error(result.error);
+    } else {
+      showSuccess(`Trip ${trip ? "updated" : "created"} successfully!`);
+      navigate(`/trip/${result.data.id}`);
+    }
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Title</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Himalayan Trek" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+    <form onSubmit={handleSubmit}>
+      <Card>
+        <CardHeader>
+          <CardTitle>{trip ? "Edit Trip" : "Create a New Trip"}</CardTitle>
+          <CardDescription>
+            Fill in the details below to get started.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Trip Title</Label>
+            <Input
+              id="title"
+              placeholder="e.g., Yosemite National Park Expedition"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              placeholder="e.g., California, USA"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              required
+            />
+          </div>
+          {debouncedLocation && (
+            <div className="mt-4">
+              <Label>Map Preview</Label>
+              <div className="h-48 mt-2">
+                <MapPreview location={debouncedLocation} apiKey={apiKey} />
+              </div>
+            </div>
           )}
-        />
-        <FormField
-          control={form.control}
-          name="location"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Location</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="e.g., Nepal"
-                  {...field}
-                  onChange={(e) => {
-                    field.onChange(e);
-                    setLocationSearch(e.target.value);
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        {debouncedLocation && (
-          <MapPreview location={debouncedLocation} apiKey={MAPBOX_API_KEY} />
-        )}
-
-        <FormField
-          control={form.control}
-          name="startDate"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>Start Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground",
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="endDate"
-          render={({ field }) => (
-            <FormItem className="flex flex-col">
-              <FormLabel>End Date</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full pl-3 text-left font-normal",
-                        !field.value && "text-muted-foreground",
-                      )}
-                    >
-                      {field.value ? (
-                        format(field.value, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : buttonText}
-        </Button>
-      </form>
-    </Form>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="start-date">Start Date</Label>
+              <DatePicker
+                date={startDate}
+                setDate={setStartDate}
+                placeholder="Select a start date"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="end-date">End Date</Label>
+              <DatePicker
+                date={endDate}
+                setDate={setEndDate}
+                placeholder="Select an end date"
+              />
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="flex justify-end gap-2">
+          <Button variant="outline" type="button" onClick={() => navigate(-1)}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting
+              ? trip
+                ? "Saving..."
+                : "Creating..."
+              : trip
+              ? "Save Changes"
+              : "Create Trip"}
+          </Button>
+        </CardFooter>
+      </Card>
+    </form>
   );
 };
