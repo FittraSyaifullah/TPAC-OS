@@ -1,16 +1,31 @@
 import { Button } from "@/components/ui/button";
 import { TripCard } from "@/components/TripCard";
-import { Plus, Calendar, Users, Package } from "lucide-react";
+import { Plus, Calendar, Users, Package, Search } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useState, useMemo } from "react";
+import { Trip } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SummaryWidget } from "@/components/SummaryWidget";
 import { EmptyState } from "@/components/EmptyState";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { Input } from "@/components/ui/input";
 
 const Dashboard = () => {
   const { trips, stats, loading, removeTrip } = useDashboardData();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredTrips = useMemo(() => {
+    if (!searchTerm) {
+      return trips;
+    }
+    return trips.filter(
+      (trip) =>
+        trip.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        trip.location.toLowerCase().includes(searchTerm.toLowerCase()),
+    );
+  }, [trips, searchTerm]);
 
   const handleDeleteTrip = async (id: string) => {
     try {
@@ -25,72 +40,100 @@ const Dashboard = () => {
     }
   };
 
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <>
+          <section className="mb-8 grid gap-4 md:grid-cols-3">
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+            <Skeleton className="h-28 w-full" />
+          </section>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-48 w-full" />
+            ))}
+          </div>
+        </>
+      );
+    }
+
+    if (trips.length === 0) {
+      return (
+        <EmptyState
+          icon={<Calendar className="h-8 w-8 text-muted-foreground" />}
+          title="No upcoming trips"
+          description="Plan a new adventure to see it here."
+        />
+      );
+    }
+
+    if (filteredTrips.length === 0) {
+      return (
+        <EmptyState
+          icon={<Search className="h-8 w-8 text-muted-foreground" />}
+          title="No trips found"
+          description="Try adjusting your search term."
+        />
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredTrips.map((trip) => (
+          <TripCard key={trip.id} trip={trip} onDelete={handleDeleteTrip} />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <header className="flex items-center justify-between mb-6">
+      <header className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
-        <Button asChild>
-          <Link to="/trip/new">
-            <Plus className="mr-2 h-4 w-4" />
-            New Trip
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search trips..."
+              className="pl-8 w-full"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <Button asChild>
+            <Link to="/trip/new">
+              <Plus className="mr-2 h-4 w-4" />
+              New Trip
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <main>
-        {loading ? (
-          <>
-            <section className="mb-8 grid gap-4 md:grid-cols-3">
-              <Skeleton className="h-28 w-full" />
-              <Skeleton className="h-28 w-full" />
-              <Skeleton className="h-28 w-full" />
-            </section>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-48 w-full" />
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            <section className="mb-8 grid gap-4 md:grid-cols-3">
-              <SummaryWidget
-                title="Total Trips"
-                value={trips.length}
-                icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
-              />
-              <SummaryWidget
-                title="Total Participants"
-                value={stats.totalParticipants}
-                icon={<Users className="h-4 w-4 text-muted-foreground" />}
-              />
-              <SummaryWidget
-                title="Total Gear Items"
-                value={stats.totalGearItems}
-                icon={<Package className="h-4 w-4 text-muted-foreground" />}
-              />
-            </section>
-
-            <h2 className="text-2xl font-bold mb-4">Upcoming Trips</h2>
-            {trips.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {trips.map((trip) => (
-                  <TripCard
-                    key={trip.id}
-                    trip={trip}
-                    onDelete={handleDeleteTrip}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon={<Calendar className="h-8 w-8 text-muted-foreground" />}
-                title="No upcoming trips"
-                description="Plan a new adventure to see it here."
-              />
-            )}
-          </>
+        {!loading && (
+          <section className="mb-8 grid gap-4 md:grid-cols-3">
+            <SummaryWidget
+              title="Total Trips"
+              value={trips.length}
+              icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
+            />
+            <SummaryWidget
+              title="Total Participants"
+              value={stats.totalParticipants}
+              icon={<Users className="h-4 w-4 text-muted-foreground" />}
+            />
+            <SummaryWidget
+              title="Total Gear Items"
+              value={stats.totalGearItems}
+              icon={<Package className="h-4 w-4 text-muted-foreground" />}
+            />
+          </section>
         )}
+
+        <h2 className="text-2xl font-bold mb-4">Upcoming Trips</h2>
+        {renderContent()}
       </main>
     </div>
   );
