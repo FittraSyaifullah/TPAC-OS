@@ -24,39 +24,49 @@ const Dashboard = () => {
       try {
         const today = new Date().toISOString();
 
-        const [tripsRes, participantsRes, gearRes] = await Promise.all([
-          supabase
-            .from("events")
-            .select("id, title, date, end_date, location")
-            .gte("end_date", today)
-            .order("date", { ascending: true }),
-          supabase
-            .from("trip_participants")
-            .select("id", { count: "exact", head: true }),
-          supabase
-            .from("trip_gear_items")
-            .select("id", { count: "exact", head: true }),
-        ]);
+        // First, fetch upcoming trips
+        const { data: tripsData, error: tripsError } = await supabase
+          .from("events")
+          .select("id, title, date, end_date, location")
+          .gte("end_date", today)
+          .order("date", { ascending: true });
 
-        if (tripsRes.error) throw tripsRes.error;
-        if (participantsRes.error) throw participantsRes.error;
-        if (gearRes.error) throw gearRes.error;
+        if (tripsError) throw tripsError;
 
-        if (tripsRes.data) {
-          const formattedTrips: Trip[] = tripsRes.data.map((event) => ({
-            id: event.id,
-            title: event.title,
-            startDate: new Date(event.date),
-            endDate: new Date(event.end_date),
-            location: event.location,
-          }));
-          setTrips(formattedTrips);
+        const formattedTrips: Trip[] = tripsData.map((event) => ({
+          id: event.id,
+          title: event.title,
+          startDate: new Date(event.date),
+          endDate: new Date(event.end_date),
+          location: event.location,
+        }));
+        setTrips(formattedTrips);
+
+        // If there are upcoming trips, fetch their stats
+        if (formattedTrips.length > 0) {
+          const tripIds = formattedTrips.map((trip) => trip.id);
+
+          const [participantsRes, gearRes] = await Promise.all([
+            supabase
+              .from("trip_participants")
+              .select("id", { count: "exact", head: true })
+              .in("trip_id", tripIds),
+            supabase
+              .from("trip_gear_items")
+              .select("id", { count: "exact", head: true })
+              .in("trip_id", tripIds),
+          ]);
+
+          if (participantsRes.error) throw participantsRes.error;
+          if (gearRes.error) throw gearRes.error;
+
+          setStats({
+            totalParticipants: participantsRes.count ?? 0,
+            totalGearItems: gearRes.count ?? 0,
+          });
+        } else {
+          setStats({ totalParticipants: 0, totalGearItems: 0 });
         }
-
-        setStats({
-          totalParticipants: participantsRes.count ?? 0,
-          totalGearItems: gearRes.count ?? 0,
-        });
       } catch (error: any) {
         showError("Failed to fetch dashboard data.");
         console.error("Error fetching data:", error);
@@ -111,7 +121,7 @@ const Dashboard = () => {
           <>
             <section className="mb-8 grid gap-4 md:grid-cols-3">
               <SummaryWidget
-                title="Total Trips"
+                title="Upcoming Trips"
                 value={trips.length}
                 icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
               />
