@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Trip } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
-import { showError } from "@/utils/toast";
+import { showError, showSuccess } from "@/utils/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Dashboard = () => {
@@ -18,7 +18,8 @@ const Dashboard = () => {
       try {
         const { data, error } = await supabase
           .from("events")
-          .select("id, title, date, end_date, location");
+          .select("id, title, date, end_date, location")
+          .order("created_at", { ascending: false });
 
         if (error) {
           throw error;
@@ -45,6 +46,19 @@ const Dashboard = () => {
     fetchTrips();
   }, []);
 
+  const handleDeleteTrip = async (id: string) => {
+    try {
+      const { error } = await supabase.from("events").delete().eq("id", id);
+      if (error) throw error;
+
+      setTrips(trips.filter((trip) => trip.id !== id));
+      showSuccess("Trip deleted successfully!");
+    } catch (error: any) {
+      showError("Failed to delete trip.");
+      console.error("Error deleting trip:", error);
+    }
+  };
+
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <header className="flex items-center justify-between mb-6">
@@ -67,7 +81,7 @@ const Dashboard = () => {
         ) : trips.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {trips.map((trip) => (
-              <TripCard key={trip.id} trip={trip} />
+              <TripCard key={trip.id} trip={trip} onDelete={handleDeleteTrip} />
             ))}
           </div>
         ) : (
