@@ -12,7 +12,6 @@ export interface ItineraryItem {
   location: string;
   activity: string;
   trip_id?: string;
-  creator_id?: string;
 }
 
 export interface Participant {
@@ -26,7 +25,6 @@ export interface GearItem {
   status: "Pending" | "Packed";
   assigned_to: string | null;
   trip_id?: string;
-  creator_id?: string;
 }
 
 export type ContactType = "Rescue" | "Local Authority" | "Embassy" | "Guide";

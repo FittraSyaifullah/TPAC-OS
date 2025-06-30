@@ -1,33 +1,86 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Mountain } from "lucide-react";
-import { Link } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { MountainSnow } from "lucide-react";
+import { showError } from "@/utils/toast";
 import { MadeWithDyad } from "@/components/made-with-dyad";
 
-const Index = () => {
+const ACCESS_CODE = "123456";
+
+const AccessCodePage = () => {
+  const navigate = useNavigate();
+  const [code, setCode] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    // If user is already authenticated, redirect to dashboard
+    if (sessionStorage.getItem("isAuthenticated")) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
+
+  const handleLogin = () => {
+    setIsSubmitting(true);
+    if (code === ACCESS_CODE) {
+      sessionStorage.setItem("isAuthenticated", "true");
+      navigate("/dashboard");
+    } else {
+      showError("Invalid access code. Please try again.");
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
-      <main className="flex-grow flex items-center justify-center p-4">
-        <div className="text-center space-y-8">
-          <div className="inline-block p-6 bg-primary/10 rounded-full">
-            <Mountain className="h-16 w-16 text-primary" />
-          </div>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tighter">
-            Plan. Pack. Conquer.
-          </h1>
-          <p className="max-w-2xl mx-auto text-lg text-muted-foreground">
-            Your ultimate adventure companion. Organize itineraries, manage
-            gear, and collaborate with your team seamlessly.
-          </p>
-          <Button asChild size="lg">
-            <Link to="/dashboard">Get Started</Link>
-          </Button>
-        </div>
+      <main className="flex-grow flex items-center justify-center bg-muted/40 p-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader className="text-center">
+            <div className="mb-4 flex justify-center">
+              <MountainSnow className="h-10 w-10" />
+            </div>
+            <CardTitle className="text-2xl font-bold tracking-tight">
+              Welcome to Trailstack
+            </CardTitle>
+            <CardDescription>
+              Please enter the access code to continue.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="access-code">Access Code</Label>
+              <Input
+                id="access-code"
+                type="password"
+                placeholder="******"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleLogin}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Verifying..." : "Enter"}
+            </Button>
+          </CardContent>
+        </Card>
       </main>
-      <footer className="p-4">
+      <footer className="p-4 bg-muted/40">
         <MadeWithDyad />
       </footer>
     </div>
   );
 };
 
-export default Index;
+export default AccessCodePage;

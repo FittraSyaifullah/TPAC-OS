@@ -39,7 +39,6 @@ import {
 import { Plus, Trash2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "./AuthProvider";
 import { showError, showSuccess } from "@/utils/toast";
 import { Skeleton } from "./ui/skeleton";
 
@@ -56,7 +55,6 @@ interface GearTabProps {
 }
 
 export const GearTab = ({ tripId, onCountsChange }: GearTabProps) => {
-  const { user } = useAuth();
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [participants] = useState<Participant[]>(initialParticipants);
@@ -66,7 +64,7 @@ export const GearTab = ({ tripId, onCountsChange }: GearTabProps) => {
 
   useEffect(() => {
     const fetchGear = async () => {
-      if (!tripId || !user) return;
+      if (!tripId) return;
       setLoading(true);
       try {
         const { data, error } = await supabase
@@ -91,7 +89,7 @@ export const GearTab = ({ tripId, onCountsChange }: GearTabProps) => {
     };
 
     fetchGear();
-  }, [tripId, user]);
+  }, [tripId]);
 
   useEffect(() => {
     const packedCount = gearItems.filter(
@@ -102,13 +100,12 @@ export const GearTab = ({ tripId, onCountsChange }: GearTabProps) => {
   }, [gearItems, onCountsChange]);
 
   const handleAddItem = async () => {
-    if (!newItemName.trim() || !user) return;
+    if (!newItemName.trim()) return;
     const newItem: Omit<GearItem, "id"> = {
       name: newItemName.trim(),
       status: "Pending",
       assigned_to: "unassigned",
       trip_id: tripId,
-      creator_id: user.id,
     };
 
     try {

@@ -4,25 +4,21 @@ import { Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Trip } from "@/types";
-import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Dashboard = () => {
-  const { user } = useAuth();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchTrips = async () => {
-      if (!user) return;
       setLoading(true);
       try {
         const { data, error } = await supabase
           .from("events")
-          .select("id, title, date, end_date, location")
-          .eq("creator_id", user.id);
+          .select("id, title, date, end_date, location");
 
         if (error) {
           throw error;
@@ -46,10 +42,8 @@ const Dashboard = () => {
       }
     };
 
-    if (user) {
-      fetchTrips();
-    }
-  }, [user]);
+    fetchTrips();
+  }, []);
 
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">

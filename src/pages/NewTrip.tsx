@@ -13,7 +13,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/components/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { showError, showSuccess } from "@/utils/toast";
 import {
@@ -41,7 +40,6 @@ const formSchema = z
   });
 
 const NewTrip = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,11 +50,6 @@ const NewTrip = () => {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
-      showError("You must be logged in to create a trip.");
-      return;
-    }
-
     try {
       const { error } = await supabase.from("events").insert([
         {
@@ -64,7 +57,6 @@ const NewTrip = () => {
           location: values.location,
           date: values.startDate.toISOString(),
           end_date: values.endDate.toISOString(),
-          creator_id: user.id,
         },
       ]);
 

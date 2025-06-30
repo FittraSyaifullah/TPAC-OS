@@ -12,7 +12,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { ItineraryItem } from "@/types";
 import { Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "./AuthProvider";
 import { showError, showSuccess } from "@/utils/toast";
 import { Skeleton } from "./ui/skeleton";
 
@@ -21,13 +20,12 @@ interface ItineraryTabProps {
 }
 
 export const ItineraryTab = ({ tripId }: ItineraryTabProps) => {
-  const { user } = useAuth();
   const [itinerary, setItinerary] = useState<ItineraryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchItinerary = async () => {
-      if (!tripId || !user) return;
+      if (!tripId) return;
       setLoading(true);
       try {
         const { data, error } = await supabase
@@ -46,10 +44,9 @@ export const ItineraryTab = ({ tripId }: ItineraryTabProps) => {
       }
     };
     fetchItinerary();
-  }, [tripId, user]);
+  }, [tripId]);
 
   const handleAddDay = async () => {
-    if (!user) return;
     const newDayNumber =
       itinerary.length > 0
         ? Math.max(...itinerary.map((item) => item.day)) + 1
@@ -59,7 +56,6 @@ export const ItineraryTab = ({ tripId }: ItineraryTabProps) => {
       location: "",
       activity: "",
       trip_id: tripId,
-      creator_id: user.id,
     };
 
     try {

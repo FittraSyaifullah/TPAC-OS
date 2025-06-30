@@ -1,26 +1,17 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { Header } from "./Header";
 import { MadeWithDyad } from "./made-with-dyad";
-import { useAuth } from "./AuthProvider";
 import { useEffect } from "react";
 
 export const Layout = () => {
-  const { session, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !session) {
-      navigate("/auth");
+    const isAuthenticated = sessionStorage.getItem("isAuthenticated");
+    if (!isAuthenticated) {
+      navigate("/");
     }
-  }, [session, loading, navigate]);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!session) {
-    return null;
-  }
+  }, [navigate]);
 
   return (
     <div className="flex flex-col min-h-screen">

@@ -10,11 +10,6 @@ export const Header = () => {
           <MountainSnow className="h-6 w-6" />
           <span className="font-bold">Trailstack</span>
         </Link>
-        <div className="flex flex-1 items-center justify-end space-x-4">
-          <Button asChild variant="secondary">
-            <Link to="/auth">Sign In</Link>
-          </Button>
-        </div>
       </div>
     </header>
   );
