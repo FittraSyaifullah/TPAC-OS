@@ -22,11 +22,14 @@ const Dashboard = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
+        const today = new Date().toISOString();
+
         const [tripsRes, participantsRes, gearRes] = await Promise.all([
           supabase
             .from("events")
             .select("id, title, date, end_date, location")
-            .order("created_at", { ascending: false }),
+            .gte("end_date", today)
+            .order("date", { ascending: true }),
           supabase
             .from("trip_participants")
             .select("id", { count: "exact", head: true }),
@@ -138,8 +141,8 @@ const Dashboard = () => {
             ) : (
               <EmptyState
                 icon={<Calendar className="h-8 w-8 text-muted-foreground" />}
-                title="No trips yet!"
-                description="Click 'New Trip' to plan your first adventure."
+                title="No upcoming trips"
+                description="Plan a new adventure to see it here."
               />
             )}
           </>
