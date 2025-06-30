@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -19,6 +19,67 @@ interface ItineraryTabProps {
   onUpdateItem: (id: string, updates: Partial<ItineraryItem>) => void;
   onRemoveItem: (id: string) => void;
 }
+
+const ItineraryDayForm = ({ item, onUpdateItem, onRemoveItem }: { item: ItineraryItem, onUpdateItem: Function, onRemoveItem: Function }) => {
+  const [location, setLocation] = useState(item.location);
+  const [activity, setActivity] = useState(item.activity);
+
+  useEffect(() => {
+    setLocation(item.location);
+    setActivity(item.activity);
+  }, [item]);
+
+  const handleBlur = (field: 'location' | 'activity', value: string) => {
+    if (value !== item[field]) {
+      onUpdateItem(item.id, { [field]: value });
+    }
+  };
+
+  return (
+    <div className="space-y-4 p-2">
+      <div>
+        <label
+          htmlFor={`location-${item.id}`}
+          className="block text-sm font-medium mb-1"
+        >
+          Location
+        </label>
+        <Input
+          id={`location-${item.id}`}
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          onBlur={() => handleBlur('location', location)}
+          placeholder="e.g., City, Landmark"
+        />
+      </div>
+      <div>
+        <label
+          htmlFor={`activity-${item.id}`}
+          className="block text-sm font-medium mb-1"
+        >
+          Activity
+        </label>
+        <Textarea
+          id={`activity-${item.id}`}
+          value={activity}
+          onChange={(e) => setActivity(e.target.value)}
+          onBlur={() => handleBlur('activity', activity)}
+          placeholder="Describe the day's activities..."
+          rows={4}
+        />
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onRemoveItem(item.id)}
+        className="mt-2"
+      >
+        <Trash2 className="h-4 w-4 mr-2" />
+        Remove Day {item.day}
+      </Button>
+    </div>
+  );
+};
 
 export const ItineraryTab = ({
   itinerary,
@@ -47,56 +108,11 @@ export const ItineraryTab = ({
                     </span>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-4 p-2">
-                      <div>
-                        <label
-                          htmlFor={`location-${item.id}`}
-                          className="block text-sm font-medium mb-1"
-                        >
-                          Location
-                        </label>
-                        <Input
-                          id={`location-${item.id}`}
-                          value={item.location}
-                          onBlur={(e) =>
-                            onUpdateItem(item.id, { location: e.target.value })
-                          }
-                          onChange={(e) => {
-                            // This can be used for local state updates if needed
-                          }}
-                          placeholder="e.g., City, Landmark"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor={`activity-${item.id}`}
-                          className="block text-sm font-medium mb-1"
-                        >
-                          Activity
-                        </label>
-                        <Textarea
-                          id={`activity-${item.id}`}
-                          value={item.activity}
-                          onBlur={(e) =>
-                            onUpdateItem(item.id, { activity: e.target.value })
-                          }
-                          onChange={(e) => {
-                            // This can be used for local state updates if needed
-                          }}
-                          placeholder="Describe the day's activities..."
-                          rows={4}
-                        />
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onRemoveItem(item.id)}
-                        className="mt-2"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Remove Day {item.day}
-                      </Button>
-                    </div>
+                    <ItineraryDayForm
+                      item={item}
+                      onUpdateItem={onUpdateItem}
+                      onRemoveItem={onRemoveItem}
+                    />
                   </AccordionContent>
                 </AccordionItem>
               ))}
