@@ -4,6 +4,8 @@ export interface Trip {
   startDate: Date;
   endDate: Date;
   location: string;
+  gear_total?: number;
+  gear_packed?: number;
 }
 
 export interface ItineraryItem {
