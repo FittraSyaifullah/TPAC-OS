@@ -36,9 +36,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Package } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EmptyState } from "./EmptyState";
+import { cn } from "@/lib/utils";
 
 interface GearTabProps {
   gearItems: GearItem[];
@@ -158,6 +160,20 @@ const AssigneeSelect = ({ value, onValueChange, participants }: any) => (
   </Select>
 );
 
+const StatusBadge = ({ status }: { status: "Packed" | "Pending" }) => (
+  <Badge
+    variant="outline"
+    className={cn(
+      "pointer-events-none",
+      status === "Packed"
+        ? "border-green-600 bg-green-50 text-green-700"
+        : "border-gray-300 bg-gray-50 text-gray-600",
+    )}
+  >
+    {status}
+  </Badge>
+);
+
 const DesktopGearList = ({
   gearItems,
   participants,
@@ -197,7 +213,7 @@ const DesktopGearList = ({
                   })
                 }
               />
-              <Label htmlFor={`status-${item.id}`}>{item.status}</Label>
+              <StatusBadge status={item.status} />
             </div>
           </TableCell>
           <TableCell className="text-right">
@@ -252,7 +268,7 @@ const MobileGearList = ({
                   })
                 }
               />
-              <Label htmlFor={`mobile-status-${item.id}`}>{item.status}</Label>
+              <StatusBadge status={item.status} />
             </div>
           </div>
         </CardContent>
