@@ -20,39 +20,96 @@ interface ItineraryTabProps {
   onRemoveItem: (id: string) => void;
 }
 
+interface ItineraryDayFormProps {
+  item: ItineraryItem;
+  onUpdateItem: (id: string, updates: Partial<ItineraryItem>) => void;
+  onRemoveItem: (id: string) => void;
+}
+
+const ItineraryDayForm = ({ item, onUpdateItem, onRemoveItem }: ItineraryDayFormProps) => {
+  const [location, setLocation] = useState(item.location);
+  const [activity, setActivity] = useState(item.activity);
+
+  useEffect(() => {
+    setLocation(item.location);
+    setActivity(item.activity);
+  }, [item]);
+
+  const handleBlur = (field: 'location' | 'activity', value: string) => {
+    const originalItem = item;
+    if (originalItem && originalItem[field] !== value) {
+      onUpdateItem(item.id, { [field]: value });
+    }
+  };
+
+  return (
+    <div className="space-y-4 p-2">
+      <div>
+        <label
+          htmlFor={`location-${item.id}`}
+          className="block text-sm font-medium mb-1"
+        >
+          Location
+        </label>
+        <Input
+          id={`location-${item.id}`}
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          onBlur={() => handleBlur('location', location)}
+          placeholder="e.g., City, Landmark"
+        />
+      </div>
+      <div>
+        <label
+          htmlFor={`activity-${item.id}`}
+          className="block text-sm font-medium mb-1"
+        >
+          Activity
+        </label>
+        <Textarea
+          id={`activity-${item.id}`}
+          value={activity}
+          onChange={(e) => setActivity(e.target.value)}
+          onBlur={() => handleBlur('activity', activity)}
+          placeholder="Describe the day's activities..."
+          rows={4}
+        />
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => onRemoveItem(item.id)}
+        className="mt-2"
+      >
+        <Trash2 className="h-4 w-4 mr-2" />
+        Remove Day {item.day}
+      </Button>
+    </div>
+  );
+};
+
 export const ItineraryTab = ({
-  itinerary: initialItinerary,
+  itinerary,
   onAddItem,
   onUpdateItem,
   onRemoveItem,
 }: ItineraryTabProps) => {
-  const [itinerary, setItinerary] = useState(initialItinerary);
+  const [localItinerary, setLocalItinerary] = useState(itinerary);
 
   useEffect(() => {
-    setItinerary(initialItinerary);
-  }, [initialItinerary]);
+    setLocalItinerary(itinerary);
+  }, [itinerary]);
 
   const handleInputChange = (
     id: string,
     field: "location" | "activity",
     value: string,
   ) => {
-    setItinerary((currentItinerary) =>
+    setLocalItinerary((currentItinerary) =>
       currentItinerary.map((item) =>
         item.id === id ? { ...item, [field]: value } : item,
       ),
     );
-  };
-
-  const handleBlur = (
-    id: string,
-    field: "location" | "activity",
-    value: string,
-  ) => {
-    const originalItem = initialItinerary.find((item) => item.id === id);
-    if (originalItem && originalItem[field] !== value) {
-      onUpdateItem(id, { [field]: value });
-    }
   };
 
   return (
@@ -62,13 +119,13 @@ export const ItineraryTab = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {itinerary.length > 0 ? (
+          {localItinerary.length > 0 ? (
             <Accordion
               type="multiple"
               className="w-full"
-              defaultValue={itinerary.length > 0 ? [itinerary[0].id] : []}
+              defaultValue={localItinerary.length > 0 ? [localItinerary[0].id] : []}
             >
-              {itinerary.map((item) => (
+              {localItinerary.map((item) => (
                 <AccordionItem key={item.id} value={item.id}>
                   <AccordionTrigger>
                     <span className="font-semibold text-left">
@@ -76,56 +133,11 @@ export const ItineraryTab = ({
                     </span>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-4 p-2">
-                      <div>
-                        <label
-                          htmlFor={`location-${item.id}`}
-                          className="block text-sm font-medium mb-1"
-                        >
-                          Location
-                        </label>
-                        <Input
-                          id={`location-${item.id}`}
-                          value={item.location}
-                          onChange={(e) =>
-                            handleInputChange(item.id, "location", e.target.value)
-                          }
-                          onBlur={(e) =>
-                            handleBlur(item.id, "location", e.target.value)
-                          }
-                          placeholder="e.g., City, Landmark"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor={`activity-${item.id}`}
-                          className="block text-sm font-medium mb-1"
-                        >
-                          Activity
-                        </label>
-                        <Textarea
-                          id={`activity-${item.id}`}
-                          value={item.activity}
-                          onChange={(e) =>
-                            handleInputChange(item.id, "activity", e.target.value)
-                          }
-                          onBlur={(e) =>
-                            handleBlur(item.id, "activity", e.target.value)
-                          }
-                          placeholder="Describe the day's activities..."
-                          rows={4}
-                        />
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onRemoveItem(item.id)}
-                        className="mt-2"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Remove Day {item.day}
-                      </Button>
-                    </div>
+                    <ItineraryDayForm
+                      item={item}
+                      onUpdateItem={onUpdateItem}
+                      onRemoveItem={onRemoveItem}
+                    />
                   </AccordionContent>
                 </AccordionItem>
               ))}
