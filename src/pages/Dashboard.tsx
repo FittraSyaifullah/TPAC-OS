@@ -2,78 +2,22 @@ import { Button } from "@/components/ui/button";
 import { TripCard } from "@/components/TripCard";
 import { Plus, Calendar, Users, Package } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { Trip } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SummaryWidget } from "@/components/SummaryWidget";
 import { EmptyState } from "@/components/EmptyState";
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 const Dashboard = () => {
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalParticipants: 0,
-    totalGearItems: 0,
-  });
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const today = new Date().toISOString();
-
-        const [tripsRes, participantsRes, gearRes] = await Promise.all([
-          supabase
-            .from("events")
-            .select("id, title, date, end_date, location")
-            .gte("end_date", today)
-            .order("date", { ascending: true }),
-          supabase
-            .from("trip_participants")
-            .select("id", { count: "exact", head: true }),
-          supabase
-            .from("trip_gear_items")
-            .select("id", { count: "exact", head: true }),
-        ]);
-
-        if (tripsRes.error) throw tripsRes.error;
-        if (participantsRes.error) throw participantsRes.error;
-        if (gearRes.error) throw gearRes.error;
-
-        if (tripsRes.data) {
-          const formattedTrips: Trip[] = tripsRes.data.map((event) => ({
-            id: event.id,
-            title: event.title,
-            startDate: new Date(event.date),
-            endDate: new Date(event.end_date),
-            location: event.location,
-          }));
-          setTrips(formattedTrips);
-        }
-
-        setStats({
-          totalParticipants: participantsRes.count ?? 0,
-          totalGearItems: gearRes.count ?? 0,
-        });
-      } catch (error: any) {
-        showError("Failed to fetch dashboard data.");
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const { trips, stats, loading, removeTrip } = useDashboardData();
 
   const handleDeleteTrip = async (id: string) => {
     try {
       const { error } = await supabase.from("events").delete().eq("id", id);
       if (error) throw error;
 
-      setTrips(trips.filter((trip) => trip.id !== id));
+      removeTrip(id);
       showSuccess("Trip deleted successfully!");
     } catch (error: any) {
       showError("Failed to delete trip.");
