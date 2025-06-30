@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Participant } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,45 +20,24 @@ import { Skeleton } from "./ui/skeleton";
 
 interface ParticipantsTabProps {
   tripId: string;
-  onParticipantsChange: (count: number) => void;
+  initialParticipants: Participant[];
+  onParticipantsChange: (participants: Participant[]) => void;
+  loading: boolean;
 }
 
-export const ParticipantsTab = ({ tripId, onParticipantsChange }: ParticipantsTabProps) => {
-  const [participants, setParticipants] = useState<Participant[]>([]);
-  const [loading, setLoading] = useState(true);
+export const ParticipantsTab = ({
+  tripId,
+  initialParticipants,
+  onParticipantsChange,
+  loading,
+}: ParticipantsTabProps) => {
+  const [participants, setParticipants] = useState<Participant[]>(initialParticipants);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newParticipantName, setNewParticipantName] = useState("");
 
-  useEffect(() => {
-    const fetchParticipants = async () => {
-      if (!tripId) return;
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("trip_participants")
-          .select("id, name")
-          .eq("trip_id", tripId)
-          .order("created_at", { ascending: true });
-
-        if (error) throw error;
-        setParticipants(data as Participant[]);
-      } catch (error: any) {
-        showError("Failed to fetch participants.");
-        console.error("Error fetching participants:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchParticipants();
-  }, [tripId]);
-
-  useEffect(() => {
-    onParticipantsChange(participants.length);
-  }, [participants, onParticipantsChange]);
-
   const handleAddParticipant = async () => {
     if (!newParticipantName.trim()) return;
-    const newParticipant: Omit<Participant, "id"> = {
+    const newParticipantData: Omit<Participant, "id"> = {
       name: newParticipantName.trim(),
       trip_id: tripId,
     };
@@ -66,13 +45,15 @@ export const ParticipantsTab = ({ tripId, onParticipantsChange }: ParticipantsTa
     try {
       const { data, error } = await supabase
         .from("trip_participants")
-        .insert(newParticipant)
+        .insert(newParticipantData)
         .select()
         .single();
 
       if (error) throw error;
 
-      setParticipants([...participants, data as Participant]);
+      const newParticipants = [...participants, data as Participant];
+      setParticipants(newParticipants);
+      onParticipantsChange(newParticipants);
       setNewParticipantName("");
       setIsAddDialogOpen(false);
       showSuccess("Participant added.");
@@ -86,7 +67,10 @@ export const ParticipantsTab = ({ tripId, onParticipantsChange }: ParticipantsTa
     try {
       const { error } = await supabase.from("trip_participants").delete().eq("id", id);
       if (error) throw error;
-      setParticipants(participants.filter((p) => p.id !== id));
+
+      const newParticipants = participants.filter((p) => p.id !== id);
+      setParticipants(newParticipants);
+      onParticipantsChange(newParticipants);
       showSuccess("Participant removed.");
     } catch (error: any) {
       showError("Failed to remove participant.");

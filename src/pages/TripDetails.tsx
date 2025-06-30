@@ -9,54 +9,70 @@ import { GearTab } from "@/components/GearTab";
 import { ParticipantsTab } from "@/components/ParticipantsTab";
 import { EmergencyTab } from "@/components/EmergencyTab";
 import { useEffect, useState } from "react";
-import { Trip } from "@/types";
+import { Trip, Participant } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
-import { showError } from "@/utils/toast";
+import { showError, showSuccess } from "@/utils/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const TripDetails = () => {
   const { id } = useParams<{ id: string }>();
   const [trip, setTrip] = useState<Trip | null>(null);
+  const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [gearCounts, setGearCounts] = useState({ packed: 0, total: 0 });
-  const [participantCount, setParticipantCount] = useState(0);
 
   useEffect(() => {
-    const fetchTrip = async () => {
+    const fetchTripAndParticipants = async () => {
       if (!id) {
         setLoading(false);
         return;
       }
       setLoading(true);
       try {
-        const { data, error } = await supabase
+        // Fetch trip details
+        const { data: tripData, error: tripError } = await supabase
           .from("events")
           .select("id, title, date, end_date, location")
           .eq("id", id)
           .single();
 
-        if (error) throw error;
+        if (tripError) throw tripError;
 
-        if (data) {
+        if (tripData) {
           setTrip({
-            id: data.id,
-            title: data.title,
-            startDate: new Date(data.date),
-            endDate: new Date(data.end_date),
-            location: data.location,
+            id: tripData.id,
+            title: tripData.title,
+            startDate: new Date(tripData.date),
+            endDate: new Date(tripData.end_date),
+            location: tripData.location,
           });
         }
+
+        // Fetch participants
+        const { data: participantsData, error: participantsError } =
+          await supabase
+            .from("trip_participants")
+            .select("id, name")
+            .eq("trip_id", id)
+            .order("created_at", { ascending: true });
+
+        if (participantsError) throw participantsError;
+        setParticipants(participantsData as Participant[]);
       } catch (error: any) {
         showError("Failed to fetch trip details.");
-        console.error("Error fetching trip:", error);
+        console.error("Error fetching data:", error);
         setTrip(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchTrip();
+    fetchTripAndParticipants();
   }, [id]);
+
+  const handleParticipantsChange = (newParticipants: Participant[]) => {
+    setParticipants(newParticipants);
+  };
 
   if (loading) {
     return (
@@ -105,7 +121,7 @@ const TripDetails = () => {
         <section className="grid gap-4 md:grid-cols-2">
           <SummaryWidget
             title="Participants"
-            value={participantCount}
+            value={participants.length}
             icon={<Users className="h-4 w-4 text-muted-foreground" />}
           />
           <SummaryWidget
@@ -126,10 +142,19 @@ const TripDetails = () => {
             <ItineraryTab tripId={trip.id} />
           </TabsContent>
           <TabsContent value="gear" className="mt-4">
-            <GearTab tripId={trip.id} onCountsChange={setGearCounts} />
+            <GearTab
+              tripId={trip.id}
+              participants={participants}
+              onCountsChange={setGearCounts}
+            />
           </TabsContent>
           <TabsContent value="participants" className="mt-4">
-            <ParticipantsTab tripId={trip.id} onParticipantsChange={setParticipantCount} />
+            <ParticipantsTab
+              tripId={trip.id}
+              initialParticipants={participants}
+              onParticipantsChange={handleParticipantsChange}
+              loading={loading}
+            />
           </TabsContent>
           <TabsContent value="emergency" className="mt-4">
             <EmergencyTab tripId={trip.id} />

@@ -42,22 +42,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Skeleton } from "./ui/skeleton";
 
-const initialParticipants: Participant[] = [
-  { id: "p1", name: "Alex" },
-  { id: "p2", name: "Jordan" },
-  { id: "p3", name: "Taylor" },
-  { id: "unassigned", name: "Unassigned" },
-];
-
 interface GearTabProps {
   tripId: string;
+  participants: Participant[];
   onCountsChange: (counts: { packed: number; total: number }) => void;
 }
 
-export const GearTab = ({ tripId, onCountsChange }: GearTabProps) => {
+export const GearTab = ({
+  tripId,
+  participants,
+  onCountsChange,
+}: GearTabProps) => {
   const [gearItems, setGearItems] = useState<GearItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [participants] = useState<Participant[]>(initialParticipants);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const isMobile = useIsMobile();
@@ -241,6 +238,22 @@ export const GearTab = ({ tripId, onCountsChange }: GearTabProps) => {
   );
 };
 
+const AssigneeSelect = ({ value, onValueChange, participants }: any) => (
+  <Select value={value} onValueChange={onValueChange}>
+    <SelectTrigger>
+      <SelectValue placeholder="Assign..." />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="unassigned">Unassigned</SelectItem>
+      {participants.map((p: Participant) => (
+        <SelectItem key={p.id} value={p.name}>
+          {p.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+);
+
 // Desktop View
 const DesktopGearList = ({
   gearItems,
@@ -262,23 +275,13 @@ const DesktopGearList = ({
         <TableRow key={item.id}>
           <TableCell className="font-medium">{item.name}</TableCell>
           <TableCell>
-            <Select
+            <AssigneeSelect
               value={item.assigned_to || "unassigned"}
-              onValueChange={(value) =>
+              onValueChange={(value: string) =>
                 handleUpdate(item.id, { assigned_to: value })
               }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Assign..." />
-              </SelectTrigger>
-              <SelectContent>
-                {participants.map((p: Participant) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              participants={participants}
+            />
           </TableCell>
           <TableCell>
             <div className="flex items-center space-x-2">
@@ -325,23 +328,15 @@ const MobileGearList = ({
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>Assigned To</Label>
-            <Select
-              value={item.assigned_to || "unassigned"}
-              onValueChange={(value) =>
-                handleUpdate(item.id, { assigned_to: value })
-              }
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Assign..." />
-              </SelectTrigger>
-              <SelectContent>
-                {participants.map((p: Participant) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="w-[180px]">
+              <AssigneeSelect
+                value={item.assigned_to || "unassigned"}
+                onValueChange={(value: string) =>
+                  handleUpdate(item.id, { assigned_to: value })
+                }
+                participants={participants}
+              />
+            </div>
           </div>
           <div className="flex items-center justify-between">
             <Label>Status</Label>
