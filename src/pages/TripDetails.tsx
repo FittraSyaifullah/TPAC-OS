@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import QRCode from 'qrcode.react';
 
 const MAPBOX_API_KEY = "pk.eyJ1IjoiZml0dHJhLXN5YWlmdWxsYWgiLCJhIjoiY204c2x2ZWRsMDFnZTJrbjF1MXpxeng4OSJ9.RYNyNDntRWMhdri3jz5W_g";
 
@@ -255,9 +256,12 @@ const TripDetails = () => {
           <DialogHeader>
             <DialogTitle>Share Trip</DialogTitle>
             <DialogDescription>
-              Anyone with this link can view a read-only version of your trip plan.
+              Anyone with a link or this QR code can view a read-only version of your trip plan.
             </DialogDescription>
           </DialogHeader>
+          <div className="flex items-center justify-center p-4">
+            <QRCode value={shareUrl} size={256} level="H" />
+          </div>
           <div className="flex items-center space-x-2">
             <div className="grid flex-1 gap-2">
               <Label htmlFor="link" className="sr-only">
