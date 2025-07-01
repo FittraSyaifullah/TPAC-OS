@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { QRCode } from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 
 const MAPBOX_API_KEY = "pk.eyJ1IjoiZml0dHJhLXN5YWlmdWxsYWgiLCJhIjoiY204c2x2ZWRsMDFnZTJrbjF1MXpxeng4OSJ9.RYNyNDntRWMhdri3jz5W_g";
 
@@ -260,7 +260,7 @@ const TripDetails = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center justify-center p-4">
-            <QRCode value={shareUrl} size={256} level="H" />
+            <QRCodeSVG value={shareUrl} size={256} level="H" />
           </div>
           <div className="flex items-center space-x-2">
             <div className="grid flex-1 gap-2">
