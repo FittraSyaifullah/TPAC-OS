@@ -66,14 +66,15 @@ const Dashboard = () => {
         .single();
       if (tripError) throw tripError;
 
-      const [participantsRes, itineraryRes, gearRes, contactsRes] = await Promise.all([
+      const [participantsRes, itineraryRes, gearRes, contactsRes, documentsRes] = await Promise.all([
         supabase.from("trip_participants").select("*").eq("trip_id", tripId),
         supabase.from("itinerary_items").select("*").eq("trip_id", tripId),
         supabase.from("trip_gear_items").select("*").eq("trip_id", tripId),
         supabase.from("emergency_contacts").select("*").eq("trip_id", tripId),
+        supabase.from("trip_documents").select("*").eq("trip_id", tripId),
       ]);
 
-      const errors = [participantsRes.error, itineraryRes.error, gearRes.error, contactsRes.error].filter(Boolean);
+      const errors = [participantsRes.error, itineraryRes.error, gearRes.error, contactsRes.error, documentsRes.error].filter(Boolean);
       if (errors.length > 0) throw errors[0];
 
       const { data: newTrip, error: newTripError } = await supabase
@@ -96,6 +97,23 @@ const Dashboard = () => {
       const itineraryToInsert = itineraryRes.data.map(({ id, trip_id, created_at, ...i }) => ({ ...i, trip_id: newTripId }));
       const gearToInsert = gearRes.data.map(({ id, trip_id, created_at, ...g }) => ({ ...g, trip_id: newTripId, status: 'Pending' }));
       const contactsToInsert = contactsRes.data.map(({ id, trip_id, created_at, ...c }) => ({ ...c, trip_id: newTripId }));
+      
+      if (documentsRes.data && documentsRes.data.length > 0) {
+        const documentsToInsert = [];
+        for (const doc of documentsRes.data) {
+          const newFilePath = `${newTripId}/${Date.now()}-${doc.name}`;
+          const { error: copyError } = await supabase.storage.from('trip_documents').copy(doc.file_path, newFilePath);
+          if (copyError) {
+            console.error(`Failed to copy document ${doc.name}:`, copyError);
+            continue;
+          }
+          documentsToInsert.push({ name: doc.name, trip_id: newTripId, file_path: newFilePath });
+        }
+        if (documentsToInsert.length > 0) {
+          const { error } = await supabase.from("trip_documents").insert(documentsToInsert);
+          if (error) throw error;
+        }
+      }
 
       if (participantsToInsert.length > 0) {
         const { error } = await supabase.from("trip_participants").insert(participantsToInsert);
