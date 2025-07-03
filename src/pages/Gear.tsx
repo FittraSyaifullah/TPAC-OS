@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Gear } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -8,17 +8,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Edit, ImageOff } from "lucide-react";
+import { Plus, Trash2, Edit, ImageOff, Search } from "lucide-react";
 import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toast";
 import { EmptyState } from "@/components/EmptyState";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
 const GearPage = () => {
   const [gear, setGear] = useState<Gear[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingGear, setEditingGear] = useState<Gear | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [conditionFilter, setConditionFilter] = useState<"all" | Gear['condition']>("all");
 
   useEffect(() => {
     fetchGear();
@@ -64,9 +66,27 @@ const GearPage = () => {
     }
   };
 
+  const gearTypes = useMemo(() => ['all', ...Array.from(new Set(gear.map(g => g.type)))], [gear]);
+  const gearConditions: Array<"all" | Gear['condition']> = ['all', 'Good', 'Needs Repair', 'Dispose'];
+
+  const filteredGear = useMemo(() => {
+    return gear.filter(item => {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = searchTerm === "" ||
+        item.name.toLowerCase().includes(searchLower) ||
+        (item.notes && item.notes.toLowerCase().includes(searchLower)) ||
+        item.type.toLowerCase().includes(searchLower);
+      
+      const matchesType = typeFilter === 'all' || item.type === typeFilter;
+      const matchesCondition = conditionFilter === 'all' || item.condition === conditionFilter;
+
+      return matchesSearch && matchesType && matchesCondition;
+    });
+  }, [gear, searchTerm, typeFilter, conditionFilter]);
+
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <header className="flex items-center justify-between mb-6">
+      <header className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">Gear Inventory</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -89,13 +109,50 @@ const GearPage = () => {
           </DialogContent>
         </Dialog>
       </header>
+
+      <div className="mb-6 flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-grow">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search gear by name, type, or notes..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Filter by type" />
+          </SelectTrigger>
+          <SelectContent>
+            {gearTypes.map(type => (
+              <SelectItem key={type} value={type}>{type === 'all' ? 'All Types' : type}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={conditionFilter} onValueChange={(value) => setConditionFilter(value as any)}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Filter by condition" />
+          </SelectTrigger>
+          <SelectContent>
+            {gearConditions.map(condition => (
+              <SelectItem key={condition} value={condition}>{condition === 'all' ? 'All Conditions' : condition}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {loading ? (
         <p>Loading...</p>
-      ) : gear.length === 0 ? (
-        <EmptyState icon={<ImageOff />} title="No Gear in Inventory" description="Add your first piece of gear to get started." />
+      ) : filteredGear.length === 0 ? (
+        <EmptyState 
+          icon={<Search />} 
+          title={searchTerm || typeFilter !== 'all' || conditionFilter !== 'all' ? "No Matching Gear Found" : "No Gear in Inventory"} 
+          description={searchTerm || typeFilter !== 'all' || conditionFilter !== 'all' ? "Try adjusting your search or filters." : "Add your first piece of gear to get started."}
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {gear.map((item) => (
+          {filteredGear.map((item) => (
             <Card key={item.id}>
               <CardHeader className="p-0">
                 <div className="aspect-video bg-muted flex items-center justify-center">
