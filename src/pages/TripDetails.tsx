@@ -11,7 +11,7 @@ import { EmergencyTab } from "@/components/EmergencyTab";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTripDetails } from "@/hooks/useTripDetails";
 import { Progress } from "@/components/ui/progress";
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import PrintableTripReport from "@/components/PrintableTripReport";
@@ -63,6 +63,8 @@ const TripDetails = () => {
   const printRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+
+  const validGearItems = useMemo(() => gearItems.filter(item => item.gear), [gearItems]);
 
   const handleExport = async () => {
     if (!printRef.current || !trip) return;
@@ -118,11 +120,11 @@ const TripDetails = () => {
   const shareUrl = `${window.location.origin}/share/${trip.id}`;
   const formattedStartDate = format(new Date(trip.startDate), "MMM d, yyyy");
   const formattedEndDate = format(new Date(trip.endDate), "MMM d, yyyy");
-  const gearPackedCount = gearItems.filter(
+  const gearPackedCount = validGearItems.filter(
     (item) => item.status === "Packed",
   ).length;
   const gearProgress =
-    gearItems.length > 0 ? (gearPackedCount / gearItems.length) * 100 : 0;
+    validGearItems.length > 0 ? (gearPackedCount / validGearItems.length) * 100 : 0;
 
   return (
     <>
@@ -183,7 +185,7 @@ const TripDetails = () => {
                 icon={<Package className="h-4 w-4 text-muted-foreground" />}
               >
                 <div className="text-2xl font-bold">
-                  {gearPackedCount} / {gearItems.length}
+                  {gearPackedCount} / {validGearItems.length}
                 </div>
                 <Progress value={gearProgress} className="mt-2" />
               </SummaryWidget>
@@ -211,7 +213,7 @@ const TripDetails = () => {
             </TabsContent>
             <TabsContent value="gear" className="mt-4">
               <GearTab
-                gearItems={gearItems}
+                gearItems={validGearItems}
                 participants={participants}
                 onAddItem={addGearItem}
                 onUpdateItem={updateGearItem}
@@ -251,7 +253,7 @@ const TripDetails = () => {
             trip={trip}
             participants={participants}
             itinerary={itinerary}
-            gearItems={gearItems}
+            gearItems={validGearItems}
             emergencyContacts={emergencyContacts}
             documents={documents}
           />

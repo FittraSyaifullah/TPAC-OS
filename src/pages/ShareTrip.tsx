@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Trip, Participant, ItineraryItem, GearItem, EmergencyContact, TripDocument } from '@/types';
@@ -22,6 +22,8 @@ const ShareTrip = () => {
   const [documents, setDocuments] = useState<TripDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const validGearItems = useMemo(() => gearItems.filter(item => item.gear), [gearItems]);
 
   useEffect(() => {
     const fetchTripData = async () => {
@@ -159,9 +161,9 @@ const ShareTrip = () => {
             <Card>
               <CardHeader><CardTitle className="flex items-center"><Package className="mr-2 h-5 w-5" /> Gear List</CardTitle></CardHeader>
               <CardContent>
-                {gearItems.length > 0 ? (
+                {validGearItems.length > 0 ? (
                   <ul className="list-disc list-inside columns-2">
-                    {gearItems.map(item => <li key={item.id}>{item.gear.name} {item.assigned_to && item.assigned_to !== 'unassigned' ? `(${item.assigned_to})` : ''}</li>)}
+                    {validGearItems.map(item => <li key={item.id}>{item.gear.name} {item.assigned_to && item.assigned_to !== 'unassigned' ? `(${item.assigned_to})` : ''}</li>)}
                   </ul>
                 ) : <p className="text-muted-foreground">No gear listed yet.</p>}
               </CardContent>
