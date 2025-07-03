@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { GearItem, Participant } from "@/types";
+import { useState, useEffect, useMemo } from "react";
+import { Gear, GearItem, Participant } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,8 +18,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -37,30 +35,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Package } from "lucide-react";
+import { Plus, Trash2, Package, ImageOff } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { EmptyState } from "./EmptyState";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { Checkbox } from "./ui/checkbox";
+import { Label } from "./ui/label";
+import { ScrollArea } from "./ui/scroll-area";
 
 interface GearTabProps {
   gearItems: GearItem[];
   participants: Participant[];
-  onAddItem: (name: string) => void;
+  onAddItem: (gearId: string) => void;
   onUpdateItem: (id: string, updates: Partial<GearItem>) => void;
   onRemoveItem: (id: string) => void;
-}
-
-interface GearListProps {
-  gearItems: GearItem[];
-  participants: Participant[];
-  handleUpdate: (id: string, updates: Partial<GearItem>) => void;
-  handleRemoveItem: (id: string) => void;
-}
-
-interface AssigneeSelectProps {
-  value: string;
-  onValueChange: (value: string) => void;
-  participants: Participant[];
 }
 
 export const GearTab = ({
@@ -70,28 +59,11 @@ export const GearTab = ({
   onUpdateItem,
   onRemoveItem,
 }: GearTabProps) => {
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newItemName, setNewItemName] = useState("");
   const isMobile = useIsMobile();
-
-  const handleAddItem = () => {
-    if (!newItemName.trim()) return;
-    onAddItem(newItemName);
-    setNewItemName("");
-    setIsAddDialogOpen(false);
-  };
-
   const packedCount = gearItems.filter(
     (item) => item.status === "Packed",
   ).length;
   const totalCount = gearItems.length;
-
-  const gearListProps: GearListProps = {
-    gearItems,
-    participants,
-    handleUpdate: onUpdateItem,
-    handleRemoveItem: onRemoveItem,
-  };
 
   return (
     <Card>
@@ -103,53 +75,21 @@ export const GearTab = ({
               {packedCount} of {totalCount} items packed
             </CardDescription>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Item
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Add New Gear Item</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Name
-                  </Label>
-                  <Input
-                    id="name"
-                    value={newItemName}
-                    onChange={(e) => setNewItemName(e.target.value)}
-                    className="col-span-3"
-                    placeholder="e.g., Headlamp"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button onClick={handleAddItem}>Add Item</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <AddGearFromInventoryDialog onAddItems={onAddItem} existingGearIds={gearItems.map(i => i.gear_id)} />
         </div>
       </CardHeader>
       <CardContent>
         {gearItems.length > 0 ? (
           isMobile ? (
-            <MobileGearList {...gearListProps} />
+            <MobileGearList gearItems={gearItems} participants={participants} handleUpdate={onUpdateItem} handleRemoveItem={onRemoveItem} />
           ) : (
-            <DesktopGearList {...gearListProps} />
+            <DesktopGearList gearItems={gearItems} participants={participants} handleUpdate={onUpdateItem} handleRemoveItem={onRemoveItem} />
           )
         ) : (
           <EmptyState
             icon={<Package className="h-8 w-8 text-muted-foreground" />}
             title="No gear added"
-            description="Add your first item to the checklist."
+            description="Add items from your inventory to build your checklist."
           />
         )}
       </CardContent>
@@ -157,7 +97,89 @@ export const GearTab = ({
   );
 };
 
-const AssigneeSelect = ({ value, onValueChange, participants }: AssigneeSelectProps) => (
+const AddGearFromInventoryDialog = ({ onAddItems, existingGearIds }: { onAddItems: (gearId: string) => void; existingGearIds: string[] }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [inventory, setInventory] = useState<Gear[]>([]);
+  const [selectedGear, setSelectedGear] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchInventory = async () => {
+        const { data } = await supabase.from("gear").select("*");
+        setInventory(data || []);
+      };
+      fetchInventory();
+    }
+  }, [isOpen]);
+
+  const availableInventory = useMemo(() => {
+    return inventory.filter(item => !existingGearIds.includes(item.id));
+  }, [inventory, existingGearIds]);
+
+  const handleAdd = () => {
+    selectedGear.forEach(id => onAddItems(id));
+    setSelectedGear([]);
+    setIsOpen(false);
+  };
+
+  const handleSelect = (gearId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedGear(prev => [...prev, gearId]);
+    } else {
+      setSelectedGear(prev => prev.filter(id => id !== gearId));
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Add from Inventory
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Add Gear from Inventory</DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="max-h-96">
+          <div className="space-y-4 p-4">
+            {availableInventory.length > 0 ? availableInventory.map(item => (
+              <div key={item.id} className="flex items-center space-x-3">
+                <Checkbox
+                  id={`gear-${item.id}`}
+                  onCheckedChange={(checked) => handleSelect(item.id, !!checked)}
+                  checked={selectedGear.includes(item.id)}
+                />
+                <Label htmlFor={`gear-${item.id}`} className="flex items-center gap-3 cursor-pointer">
+                  <div className="w-12 h-12 bg-muted rounded-md flex-shrink-0">
+                    {item.photo_url ? <img src={item.photo_url} alt={item.name} className="w-full h-full object-cover rounded-md" /> : <ImageOff className="w-6 h-6 text-muted-foreground m-auto" />}
+                  </div>
+                  <div>
+                    <p className="font-semibold">{item.name}</p>
+                    <p className="text-sm text-muted-foreground">{item.type}</p>
+                  </div>
+                </Label>
+              </div>
+            )) : (
+              <p className="text-center text-muted-foreground py-8">No available gear in your inventory.</p>
+            )}
+          </div>
+        </ScrollArea>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+          <Button onClick={handleAdd} disabled={selectedGear.length === 0}>Add Selected</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// ... (MobileGearList and DesktopGearList remain mostly the same, but use item.gear.name)
+
+const AssigneeSelect = ({ value, onValueChange, participants }: { value: string; onValueChange: (value: string) => void; participants: Participant[] }) => (
   <Select value={value} onValueChange={onValueChange}>
     <SelectTrigger>
       <SelectValue placeholder="Assign..." />
@@ -187,12 +209,7 @@ const StatusBadge = ({ status }: { status: "Packed" | "Pending" }) => (
   </Badge>
 );
 
-const DesktopGearList = ({
-  gearItems,
-  participants,
-  handleUpdate,
-  handleRemoveItem,
-}: GearListProps) => (
+const DesktopGearList = ({ gearItems, participants, handleUpdate, handleRemoveItem }: { gearItems: GearItem[], participants: Participant[], handleUpdate: (id: string, updates: Partial<GearItem>) => void, handleRemoveItem: (id: string) => void }) => (
   <Table>
     <TableHeader>
       <TableRow>
@@ -205,7 +222,7 @@ const DesktopGearList = ({
     <TableBody>
       {gearItems.map((item: GearItem) => (
         <TableRow key={item.id}>
-          <TableCell className="font-medium">{item.name}</TableCell>
+          <TableCell className="font-medium">{item.gear.name}</TableCell>
           <TableCell>
             <AssigneeSelect
               value={item.assigned_to || "unassigned"}
@@ -244,17 +261,12 @@ const DesktopGearList = ({
   </Table>
 );
 
-const MobileGearList = ({
-  gearItems,
-  participants,
-  handleUpdate,
-  handleRemoveItem,
-}: GearListProps) => (
+const MobileGearList = ({ gearItems, participants, handleUpdate, handleRemoveItem }: { gearItems: GearItem[], participants: Participant[], handleUpdate: (id: string, updates: Partial<GearItem>) => void, handleRemoveItem: (id: string) => void }) => (
   <div className="space-y-4">
     {gearItems.map((item: GearItem) => (
       <Card key={item.id}>
         <CardHeader>
-          <CardTitle>{item.name}</CardTitle>
+          <CardTitle>{item.gear.name}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">

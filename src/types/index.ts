@@ -25,12 +25,26 @@ export interface Participant {
   trip_id?: string;
 }
 
-export interface GearItem {
+export interface Gear {
   id: string;
   name: string;
+  type: string;
+  quantity: number;
+  available: number;
+  condition: 'Good' | 'Needs Repair' | 'Dispose';
+  photo_url?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GearItem {
+  id: string;
   status: "Pending" | "Packed";
   assigned_to: string | null;
   trip_id?: string;
+  gear_id: string;
+  gear: Gear;
 }
 
 export type ContactType = "Rescue" | "Local Authority" | "Embassy" | "Guide";
@@ -49,17 +63,4 @@ export interface TripDocument {
   file_path: string;
   created_at: string;
   trip_id?: string;
-}
-
-export interface Gear {
-  id: string;
-  name: string;
-  type: string;
-  quantity: number;
-  available: number;
-  condition: 'Good' | 'Needs Repair' | 'Dispose';
-  photo_url?: string | null;
-  notes?: string | null;
-  created_at: string;
-  updated_at: string;
 }

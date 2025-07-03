@@ -23,7 +23,7 @@ export const useTripDetails = (tripId: string | undefined) => {
         supabase.from("events").select("id, title, date, end_date, location").eq("id", tripId).single(),
         supabase.from("trip_participants").select("*").eq("trip_id", tripId).order("created_at"),
         supabase.from("itinerary_items").select("*").eq("trip_id", tripId).order("day"),
-        supabase.from("trip_gear_items").select("*").eq("trip_id", tripId).order("created_at"),
+        supabase.from("trip_gear_items").select("*, gear(*)").eq("trip_id", tripId),
         supabase.from("emergency_contacts").select("*").eq("trip_id", tripId).order("created_at"),
         supabase.from("trip_documents").select("*").eq("trip_id", tripId).order("created_at"),
       ]);
@@ -181,7 +181,6 @@ export const useTripDetails = (tripId: string | undefined) => {
       const { error: updateError } = await supabase.from("itinerary_items").upsert(updates);
       if (updateError) {
         showError("Failed to update schedule. Please refresh.");
-        // Re-fetch data to ensure consistency
         fetchData();
         return;
       }
@@ -192,9 +191,9 @@ export const useTripDetails = (tripId: string | undefined) => {
   };
 
   // Gear Handlers
-  const addGearItem = async (name: string) => {
-    if (!tripId || !name.trim()) return;
-    const { data, error } = await supabase.from("trip_gear_items").insert({ name: name.trim(), status: "Pending", trip_id: tripId }).select().single();
+  const addGearItem = async (gearId: string) => {
+    if (!tripId || !gearId) return;
+    const { data, error } = await supabase.from("trip_gear_items").insert({ gear_id: gearId, status: "Pending", trip_id: tripId }).select("*, gear(*)").single();
     if (error) { showError("Failed to add gear item."); return; }
     setGearItems(prev => [data as GearItem, ...prev]);
     showSuccess("Gear item added.");
