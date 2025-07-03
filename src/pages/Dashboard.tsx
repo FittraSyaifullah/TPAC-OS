@@ -25,13 +25,15 @@ import { Label } from "@/components/ui/label";
 import { QRCodeSVG } from 'qrcode.react';
 
 const Dashboard = () => {
-  const { upcomingTrips, pastTrips, loading, removeTrip } = useDashboardData();
+  const { data, isLoading, refetch } = useDashboardData();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
 
+  const upcomingTrips = data?.upcomingTrips || [];
+  const pastTrips = data?.pastTrips || [];
   const trips = activeTab === 'upcoming' ? upcomingTrips : pastTrips;
 
   const filteredTrips = useMemo(() => {
@@ -46,7 +48,8 @@ const Dashboard = () => {
   }, [trips, searchTerm]);
 
   const stats = useMemo(() => {
-    return filteredTrips.reduce(
+    const allTrips = [...upcomingTrips, ...pastTrips];
+    return allTrips.reduce(
       (acc, trip) => {
         acc.totalParticipants += trip.participant_count || 0;
         acc.totalGearItems += trip.gear_total || 0;
@@ -55,13 +58,13 @@ const Dashboard = () => {
       },
       { totalParticipants: 0, totalGearItems: 0, totalGearPacked: 0 },
     );
-  }, [filteredTrips]);
+  }, [upcomingTrips, pastTrips]);
 
   const handleDeleteTrip = async (id: string) => {
     try {
       const { error } = await supabase.from("events").delete().eq("id", id);
       if (error) throw error;
-      removeTrip(id);
+      refetch();
       showSuccess("Trip deleted successfully!");
     } catch (error: any) {
       showError("Failed to delete trip.");
@@ -146,6 +149,7 @@ const Dashboard = () => {
       }
 
       dismissToast(toastId);
+      refetch();
       showSuccess("Trip duplicated successfully!");
       navigate(`/trip/${newTripId}`);
 
@@ -163,7 +167,7 @@ const Dashboard = () => {
 
   const shareUrl = selectedTripId ? `${window.location.origin}/share/${selectedTripId}` : "";
 
-  if (loading) {
+  if (isLoading) {
     return <DashboardLoadingSkeleton />;
   }
 
@@ -195,13 +199,13 @@ const Dashboard = () => {
         <main>
           <section className="mb-8 grid gap-4 md:grid-cols-3">
             <SummaryWidget
-              title="Trips"
+              title="Total Trips"
               icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
             >
-              <div className="text-2xl font-bold">{filteredTrips.length}</div>
+              <div className="text-2xl font-bold">{upcomingTrips.length + pastTrips.length}</div>
             </SummaryWidget>
             <SummaryWidget
-              title="Participants"
+              title="Total Participants"
               icon={<Users className="h-4 w-4 text-muted-foreground" />}
             >
               <div className="text-2xl font-bold">
@@ -209,7 +213,7 @@ const Dashboard = () => {
               </div>
             </SummaryWidget>
             <SummaryWidget
-              title="Total Gear Items"
+              title="Total Gear Items (in trips)"
               icon={<Package className="h-4 w-4 text-muted-foreground" />}
             >
               <div className="text-2xl font-bold">{stats.totalGearItems}</div>
