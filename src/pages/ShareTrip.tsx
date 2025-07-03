@@ -51,7 +51,7 @@ const ShareTrip = () => {
         const [participantsRes, itineraryRes, gearRes, contactsRes, documentsRes] = await Promise.all([
           supabase.from("trip_participants").select("*").eq("trip_id", id).order("created_at"),
           supabase.from("itinerary_items").select("*").eq("trip_id", id).order("day"),
-          supabase.from("trip_gear_items").select("*").eq("trip_id", id).order("created_at"),
+          supabase.from("trip_gear_items").select("*, gear(*)").eq("trip_id", id),
           supabase.from("emergency_contacts").select("*").eq("trip_id", id).order("created_at"),
           supabase.from("trip_documents").select("*").eq("trip_id", id).order("created_at"),
         ]);
@@ -161,7 +161,7 @@ const ShareTrip = () => {
               <CardContent>
                 {gearItems.length > 0 ? (
                   <ul className="list-disc list-inside columns-2">
-                    {gearItems.map(item => <li key={item.id}>{item.name} {item.assigned_to && item.assigned_to !== 'unassigned' ? `(${item.assigned_to})` : ''}</li>)}
+                    {gearItems.map(item => <li key={item.id}>{item.gear.name} {item.assigned_to && item.assigned_to !== 'unassigned' ? `(${item.assigned_to})` : ''}</li>)}
                   </ul>
                 ) : <p className="text-muted-foreground">No gear listed yet.</p>}
               </CardContent>
