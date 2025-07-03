@@ -23,7 +23,7 @@ const LoginPage = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const success = login(accessCode);
+    const success = login(accessCode.trim());
     if (success) {
       navigate("/dashboard");
     } else {
