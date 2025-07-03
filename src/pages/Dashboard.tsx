@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { TripCard } from "@/components/TripCard";
-import { Plus, Calendar, Users, Package, Search } from "lucide-react";
+import { Plus, Calendar, Users, Package, Search, Copy } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,12 +12,25 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardLoadingSkeleton } from "@/components/DashboardLoadingSkeleton";
 import { GearStatusChart } from "@/components/GearStatusChart";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { QRCodeSVG } from 'qrcode.react';
 
 const Dashboard = () => {
   const { upcomingTrips, pastTrips, loading, removeTrip } = useDashboardData();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
 
   const trips = activeTab === 'upcoming' ? upcomingTrips : pastTrips;
 
@@ -143,92 +156,147 @@ const Dashboard = () => {
     }
   };
 
+  const handleShareTrip = (tripId: string) => {
+    setSelectedTripId(tripId);
+    setIsShareDialogOpen(true);
+  };
+
+  const shareUrl = selectedTripId ? `${window.location.origin}/share/${selectedTripId}` : "";
+
   if (loading) {
     return <DashboardLoadingSkeleton />;
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <header className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
-        <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search trips..."
-              className="pl-8 w-full"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Button asChild>
-            <Link to="/trip/new">
-              <Plus className="mr-2 h-4 w-4" />
-              New Trip
-            </Link>
-          </Button>
-        </div>
-      </header>
-
-      <main>
-        <section className="mb-8 grid gap-4 md:grid-cols-3">
-          <SummaryWidget
-            title="Trips"
-            icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
-          >
-            <div className="text-2xl font-bold">{filteredTrips.length}</div>
-          </SummaryWidget>
-          <SummaryWidget
-            title="Participants"
-            icon={<Users className="h-4 w-4 text-muted-foreground" />}
-          >
-            <div className="text-2xl font-bold">
-              {stats.totalParticipants}
+    <>
+      <div className="container mx-auto p-4 md:p-6 lg:p-8">
+        <header className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search trips..."
+                className="pl-8 w-full"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-          </SummaryWidget>
-          <SummaryWidget
-            title="Total Gear Items"
-            icon={<Package className="h-4 w-4 text-muted-foreground" />}
-          >
-            <div className="text-2xl font-bold">{stats.totalGearItems}</div>
-          </SummaryWidget>
-        </section>
-
-        <section className="mb-8">
-          <GearStatusChart packed={stats.totalGearPacked} total={stats.totalGearItems} />
-        </section>
-
-        <Tabs defaultValue="upcoming" onValueChange={(value) => setActiveTab(value as 'upcoming' | 'past')}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="past">Past</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        
-        {filteredTrips.length === 0 ? (
-          searchTerm ? (
-            <EmptyState
-              icon={<Search className="h-8 w-8 text-muted-foreground" />}
-              title="No trips found"
-              description="Try adjusting your search term."
-            />
-          ) : (
-            <EmptyState
-              icon={<Calendar className="h-8 w-8 text-muted-foreground" />}
-              title={activeTab === 'upcoming' ? "No upcoming trips" : "No past trips"}
-              description={activeTab === 'upcoming' ? "Plan a new adventure to see it here." : "Completed trips will appear here."}
-            />
-          )
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTrips.map((trip) => (
-              <TripCard key={trip.id} trip={trip} onDelete={handleDeleteTrip} onDuplicate={handleDuplicateTrip} />
-            ))}
+            <Button asChild>
+              <Link to="/trip/new">
+                <Plus className="mr-2 h-4 w-4" />
+                New Trip
+              </Link>
+            </Button>
           </div>
-        )}
-      </main>
-    </div>
+        </header>
+
+        <main>
+          <section className="mb-8 grid gap-4 md:grid-cols-3">
+            <SummaryWidget
+              title="Trips"
+              icon={<Calendar className="h-4 w-4 text-muted-foreground" />}
+            >
+              <div className="text-2xl font-bold">{filteredTrips.length}</div>
+            </SummaryWidget>
+            <SummaryWidget
+              title="Participants"
+              icon={<Users className="h-4 w-4 text-muted-foreground" />}
+            >
+              <div className="text-2xl font-bold">
+                {stats.totalParticipants}
+              </div>
+            </SummaryWidget>
+            <SummaryWidget
+              title="Total Gear Items"
+              icon={<Package className="h-4 w-4 text-muted-foreground" />}
+            >
+              <div className="text-2xl font-bold">{stats.totalGearItems}</div>
+            </SummaryWidget>
+          </section>
+
+          <section className="mb-8">
+            <GearStatusChart packed={stats.totalGearPacked} total={stats.totalGearItems} />
+          </section>
+
+          <Tabs defaultValue="upcoming" onValueChange={(value) => setActiveTab(value as 'upcoming' | 'past')}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+              <TabsTrigger value="past">Past</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          {filteredTrips.length === 0 ? (
+            searchTerm ? (
+              <EmptyState
+                icon={<Search />}
+                title="No trips found"
+                description="Try adjusting your search term."
+              />
+            ) : (
+              <EmptyState
+                icon={<Calendar className="h-8 w-8 text-muted-foreground" />}
+                title={activeTab === 'upcoming' ? "No upcoming trips" : "No past trips"}
+                description={activeTab === 'upcoming' ? "Plan a new adventure to see it here." : "Completed trips will appear here."}
+              />
+            )
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredTrips.map((trip) => (
+                <TripCard key={trip.id} trip={trip} onDelete={handleDeleteTrip} onDuplicate={handleDuplicateTrip} onShare={handleShareTrip} />
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
+      <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Trip</DialogTitle>
+            <DialogDescription>
+              Anyone with a link or this QR code can view a read-only version of your trip plan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4">
+            <QRCodeSVG value={shareUrl} size={256} level="H" />
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="grid flex-1 gap-2">
+              <Label htmlFor="link" className="sr-only">
+                Link
+              </Label>
+              <Input
+                id="link"
+                defaultValue={shareUrl}
+                readOnly
+              />
+            </div>
+            <Button type="button" size="sm" className="px-3" onClick={() => {
+              if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                  showSuccess("Link copied to clipboard!");
+                }).catch(() => {
+                  showError("Could not copy link automatically. Please copy it manually.");
+                });
+              } else {
+                showError("Automatic copy is not available. Please copy the link manually.");
+              }
+            }}>
+              <span className="sr-only">Copy</span>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <DialogFooter className="sm:justify-start">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Close
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

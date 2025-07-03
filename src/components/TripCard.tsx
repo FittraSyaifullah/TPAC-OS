@@ -19,7 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { MapPin, Trash2, Users, Copy } from "lucide-react";
+import { MapPin, Trash2, Users, Copy, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { Progress } from "./ui/progress";
@@ -28,9 +28,10 @@ interface TripCardProps {
   trip: Trip;
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
+  onShare: (id: string) => void;
 }
 
-export const TripCard = ({ trip, onDelete, onDuplicate }: TripCardProps) => {
+export const TripCard = ({ trip, onDelete, onDuplicate, onShare }: TripCardProps) => {
   const formattedStartDate = format(new Date(trip.startDate), "MMM d, yyyy");
   const formattedEndDate = format(new Date(trip.endDate), "MMM d, yyyy");
 
@@ -70,6 +71,9 @@ export const TripCard = ({ trip, onDelete, onDuplicate }: TripCardProps) => {
           <Link to={`/trip/${trip.id}`}>View Trip</Link>
         </Button>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => onShare(trip.id)}>
+            <Share2 className="h-4 w-4" />
+          </Button>
           <Button variant="outline" size="icon" onClick={() => onDuplicate(trip.id)}>
             <Copy className="h-4 w-4" />
           </Button>
