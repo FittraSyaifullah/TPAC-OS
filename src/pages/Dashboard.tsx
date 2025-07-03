@@ -47,7 +47,7 @@ const Dashboard = () => {
     );
   }, [trips, searchTerm]);
 
-  const stats = useMemo(() => {
+  const globalStats = useMemo(() => {
     const allTrips = [...upcomingTrips, ...pastTrips];
     return allTrips.reduce(
       (acc, trip) => {
@@ -209,19 +209,19 @@ const Dashboard = () => {
               icon={<Users className="h-4 w-4 text-muted-foreground" />}
             >
               <div className="text-2xl font-bold">
-                {stats.totalParticipants}
+                {globalStats.totalParticipants}
               </div>
             </SummaryWidget>
             <SummaryWidget
               title="Total Gear Items (in trips)"
               icon={<Package className="h-4 w-4 text-muted-foreground" />}
             >
-              <div className="text-2xl font-bold">{stats.totalGearItems}</div>
+              <div className="text-2xl font-bold">{globalStats.totalGearItems}</div>
             </SummaryWidget>
           </section>
 
           <section className="mb-8">
-            <GearStatusChart packed={stats.totalGearPacked} total={stats.totalGearItems} />
+            <GearStatusChart packed={globalStats.totalGearPacked} total={globalStats.totalGearItems} />
           </section>
 
           <Tabs defaultValue="upcoming" onValueChange={(value) => setActiveTab(value as 'upcoming' | 'past')}>
