@@ -50,3 +50,16 @@ export interface TripDocument {
   created_at: string;
   trip_id?: string;
 }
+
+export interface Gear {
+  id: string;
+  name: string;
+  type: string;
+  quantity: number;
+  available: number;
+  condition: 'Good' | 'Needs Repair' | 'Dispose';
+  photo_url?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}

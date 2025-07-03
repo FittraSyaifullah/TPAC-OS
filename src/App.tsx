@@ -14,6 +14,7 @@ import EditTrip from "./pages/EditTrip";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthProvider } from "./components/AuthProvider";
 import ShareTrip from "./pages/ShareTrip";
+import GearPage from "./pages/Gear";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
 
               <Route element={<Layout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/gear" element={<GearPage />} />
                 <Route path="/trip/new" element={<NewTrip />} />
                 <Route path="/trip/:id" element={<TripDetails />} />
                 <Route path="/trip/:id/edit" element={<EditTrip />} />
