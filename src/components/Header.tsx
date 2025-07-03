@@ -3,10 +3,11 @@ import { MountainSnow, LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "./AuthProvider";
+import { Badge } from "./ui/badge";
 
 export const Header = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, userRole } = useAuth();
 
   const handleLogOff = () => {
     logout();
@@ -26,7 +27,8 @@ export const Header = () => {
             <Link to="/gear" className="text-muted-foreground transition-colors hover:text-foreground">Gear</Link>
           </nav>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          {userRole && <Badge variant="outline">{userRole}</Badge>}
           <ThemeToggle />
           <Button variant="outline" onClick={handleLogOff}>
             <LogOut className="mr-2 h-4 w-4" />
@@ -36,4 +38,3 @@ export const Header = () => {
       </div>
     </header>
   );
-};
