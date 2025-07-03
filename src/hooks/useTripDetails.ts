@@ -20,7 +20,7 @@ export const useTripDetails = (tripId: string | undefined) => {
     setLoading(true);
     try {
       const [tripRes, participantsRes, itineraryRes, gearRes, contactsRes, documentsRes] = await Promise.all([
-        supabase.from("events").select("id, title, date, end_date, location").eq("id", tripId).single(),
+        supabase.from("events").select("id, title, date, end_date, location, last_edited_by").eq("id", tripId).single(),
         supabase.from("trip_participants").select("*").eq("trip_id", tripId).order("created_at"),
         supabase.from("itinerary_items").select("*").eq("trip_id", tripId).order("day"),
         supabase.from("trip_gear_items").select("*, gear(*)").eq("trip_id", tripId),
