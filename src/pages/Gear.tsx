@@ -167,7 +167,7 @@ const GearPage = () => {
                 <CardTitle className="text-lg">{item.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">{item.type}</p>
                 <div className="flex justify-between items-center mt-2">
-                  <p className="text-sm">Quantity: {item.quantity}</p>
+                  <p className="text-sm">Available: {item.available} / {item.quantity}</p>
                   <Badge variant={item.condition === 'Good' ? 'default' : item.condition === 'Needs Repair' ? 'secondary' : 'destructive'}>
                     {item.condition}
                   </Badge>
@@ -193,10 +193,17 @@ const GearForm = ({ gearItem, onSave, onClose }: { gearItem: Gear | null; onSave
   const [name, setName] = useState(gearItem?.name || "");
   const [type, setType] = useState(gearItem?.type || "");
   const [quantity, setQuantity] = useState(gearItem?.quantity || 1);
+  const [available, setAvailable] = useState(gearItem?.available ?? gearItem?.quantity ?? 1);
   const [condition, setCondition] = useState<Gear['condition']>(gearItem?.condition || 'Good');
   const [notes, setNotes] = useState(gearItem?.notes || "");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!gearItem) {
+      setAvailable(quantity);
+    }
+  }, [quantity, gearItem]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -221,7 +228,7 @@ const GearForm = ({ gearItem, onSave, onClose }: { gearItem: Gear | null; onSave
       name,
       type,
       quantity,
-      available: quantity, // Assuming all are available when added/edited
+      available,
       condition,
       notes,
       photo_url,
@@ -264,22 +271,26 @@ const GearForm = ({ gearItem, onSave, onClose }: { gearItem: Gear | null; onSave
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="quantity">Quantity</Label>
+          <Label htmlFor="quantity">Total Quantity</Label>
           <Input id="quantity" type="number" value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value, 10))} min="1" required />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="condition">Condition</Label>
-          <Select onValueChange={(value: Gear['condition']) => setCondition(value)} value={condition}>
-            <SelectTrigger id="condition">
-              <SelectValue placeholder="Select condition" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Good">Good</SelectItem>
-              <SelectItem value="Needs Repair">Needs Repair</SelectItem>
-              <SelectItem value="Dispose">Dispose</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label htmlFor="available">Available</Label>
+          <Input id="available" type="number" value={available} onChange={(e) => setAvailable(parseInt(e.target.value, 10))} min="0" required />
         </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="condition">Condition</Label>
+        <Select onValueChange={(value: Gear['condition']) => setCondition(value)} value={condition}>
+          <SelectTrigger id="condition">
+            <SelectValue placeholder="Select condition" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Good">Good</SelectItem>
+            <SelectItem value="Needs Repair">Needs Repair</SelectItem>
+            <SelectItem value="Dispose">Dispose</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-2">
         <Label htmlFor="photo">Photo</Label>

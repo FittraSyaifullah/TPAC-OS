@@ -150,14 +150,15 @@ const AddGearFromInventoryDialog = ({ onAddItems, existingGearIds }: { onAddItem
                   id={`gear-${item.id}`}
                   onCheckedChange={(checked) => handleSelect(item.id, !!checked)}
                   checked={selectedGear.includes(item.id)}
+                  disabled={item.available <= 0}
                 />
-                <Label htmlFor={`gear-${item.id}`} className="flex items-center gap-3 cursor-pointer">
+                <Label htmlFor={`gear-${item.id}`} className={cn("flex items-center gap-3 cursor-pointer", item.available <= 0 && "opacity-50 cursor-not-allowed")}>
                   <div className="w-12 h-12 bg-muted rounded-md flex-shrink-0">
                     {item.photo_url ? <img src={item.photo_url} alt={item.name} className="w-full h-full object-cover rounded-md" /> : <ImageOff className="w-6 h-6 text-muted-foreground m-auto" />}
                   </div>
                   <div>
                     <p className="font-semibold">{item.name}</p>
-                    <p className="text-sm text-muted-foreground">{item.type}</p>
+                    <p className="text-sm text-muted-foreground">{item.type} - {item.available} of {item.quantity} available</p>
                   </div>
                 </Label>
               </div>
@@ -176,8 +177,6 @@ const AddGearFromInventoryDialog = ({ onAddItems, existingGearIds }: { onAddItem
     </Dialog>
   );
 };
-
-// ... (MobileGearList and DesktopGearList remain mostly the same, but use item.gear.name)
 
 const AssigneeSelect = ({ value, onValueChange, participants }: { value: string; onValueChange: (value: string) => void; participants: Participant[] }) => (
   <Select value={value} onValueChange={onValueChange}>

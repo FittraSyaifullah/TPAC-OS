@@ -193,8 +193,31 @@ export const useTripDetails = (tripId: string | undefined) => {
   // Gear Handlers
   const addGearItem = async (gearId: string) => {
     if (!tripId || !gearId) return;
+
+    const { data: gear, error: gearError } = await supabase
+      .from('gear')
+      .select('available')
+      .eq('id', gearId)
+      .single();
+
+    if (gearError || !gear) {
+      showError("Could not find the gear item in your inventory.");
+      return;
+    }
+
+    if (gear.available <= 0) {
+      showError("This gear item is not available.");
+      return;
+    }
+
     const { data, error } = await supabase.from("trip_gear_items").insert({ gear_id: gearId, status: "Pending", trip_id: tripId }).select("*, gear(*)").single();
     if (error) { showError("Failed to add gear item."); return; }
+
+    await supabase
+      .from('gear')
+      .update({ available: gear.available - 1 })
+      .eq('id', gearId);
+    
     setGearItems(prev => [data as GearItem, ...prev]);
     showSuccess("Gear item added.");
   };
@@ -206,8 +229,25 @@ export const useTripDetails = (tripId: string | undefined) => {
   };
 
   const removeGearItem = async (id: string) => {
+    const itemToRemove = gearItems.find(item => item.id === id);
+    if (!itemToRemove) return;
+
     const { error } = await supabase.from("trip_gear_items").delete().eq("id", id);
     if (error) { showError("Failed to remove gear item."); return; }
+
+    const { data: gear, error: gearError } = await supabase
+      .from('gear')
+      .select('available')
+      .eq('id', itemToRemove.gear_id)
+      .single();
+    
+    if (!gearError && gear) {
+      await supabase
+        .from('gear')
+        .update({ available: gear.available + 1 })
+        .eq('id', itemToRemove.gear_id);
+    }
+
     setGearItems(prev => prev.filter(g => g.id !== id));
     showSuccess("Gear item removed.");
   };
