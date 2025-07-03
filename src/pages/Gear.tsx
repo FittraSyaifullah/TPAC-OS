@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/AuthProvider";
 
 const GearPage = () => {
+  const { userRole } = useAuth();
   const [gear, setGear] = useState<Gear[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -22,6 +23,16 @@ const GearPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [conditionFilter, setConditionFilter] = useState<"all" | Gear['condition']>("all");
+
+  const canManageGear = useMemo(() => {
+    if (!userRole) return false;
+    const allowedRoles = [
+      'Developer',
+      'Quartermaster',
+      'Assistant Quartermaster'
+    ];
+    return allowedRoles.includes(userRole);
+  }, [userRole]);
 
   useEffect(() => {
     fetchGear();
@@ -89,26 +100,28 @@ const GearPage = () => {
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <header className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
         <h1 className="text-2xl md:text-3xl font-bold">Gear Inventory</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingGear(null)}>
-              <Plus className="mr-2 h-4 w-4" /> Add Gear
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingGear ? "Edit Gear" : "Add New Gear"}</DialogTitle>
-            </DialogHeader>
-            <GearForm
-              gearItem={editingGear}
-              onSave={(savedGear) => {
-                handleSave(savedGear);
-                setIsDialogOpen(false);
-              }}
-              onClose={() => setIsDialogOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
+        {canManageGear && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setEditingGear(null)}>
+                <Plus className="mr-2 h-4 w-4" /> Add Gear
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingGear ? "Edit Gear" : "Add New Gear"}</DialogTitle>
+              </DialogHeader>
+              <GearForm
+                gearItem={editingGear}
+                onSave={(savedGear) => {
+                  handleSave(savedGear);
+                  setIsDialogOpen(false);
+                }}
+                onClose={() => setIsDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </header>
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
@@ -176,14 +189,16 @@ const GearPage = () => {
               </CardContent>
               <CardFooter className="flex justify-between items-center">
                 <p className="text-xs text-muted-foreground">Last edited by: {item.last_edited_by || 'N/A'}</p>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="icon" onClick={() => { setEditingGear(item); setIsDialogOpen(true); }}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="destructive" size="icon" onClick={() => handleDelete(item)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+                {canManageGear && (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="icon" onClick={() => { setEditingGear(item); setIsDialogOpen(true); }}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="destructive" size="icon" onClick={() => handleDelete(item)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </CardFooter>
             </Card>
           ))}
