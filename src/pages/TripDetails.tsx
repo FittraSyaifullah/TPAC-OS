@@ -30,6 +30,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { QRCodeSVG } from 'qrcode.react';
+import { Badge } from "@/components/ui/badge";
 
 const MAPBOX_API_KEY = "pk.eyJ1IjoiZml0dHJhLXN5YWlmdWxsYWgiLCJhIjoiY204c2x2ZWRsMDFnZTJrbjF1MXpxeng4OSJ9.RYNyNDntRWMhdri3jz5W_g";
 
@@ -161,6 +162,11 @@ const TripDetails = () => {
               <span>{trip.location}</span>
             </div>
           </div>
+          {trip.last_edited_by && (
+            <Badge variant="secondary" className="mt-2">
+              Last edited by: {trip.last_edited_by}
+            </Badge>
+          )}
         </header>
 
         <main className="space-y-6">

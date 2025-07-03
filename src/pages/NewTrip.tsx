@@ -6,9 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { showError, showSuccess } from "@/utils/toast";
 import { TripForm, formSchema } from "@/components/TripForm";
+import { useAuth } from "@/components/AuthProvider";
 
 const NewTrip = () => {
   const navigate = useNavigate();
+  const { userRole } = useAuth();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -25,6 +27,7 @@ const NewTrip = () => {
           location: values.location,
           date: values.startDate.toISOString(),
           end_date: values.endDate.toISOString(),
+          last_edited_by: userRole,
         },
       ]);
 

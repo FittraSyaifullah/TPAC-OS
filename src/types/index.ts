@@ -7,6 +7,7 @@ export interface Trip {
   gear_total?: number;
   gear_packed?: number;
   participant_count?: number;
+  last_edited_by?: string;
 }
 
 export interface ItineraryItem {
@@ -36,6 +37,7 @@ export interface Gear {
   notes?: string | null;
   created_at: string;
   updated_at: string;
+  last_edited_by?: string;
 }
 
 export interface GearItem {

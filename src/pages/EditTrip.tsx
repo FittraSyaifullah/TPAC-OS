@@ -8,10 +8,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import { showError, showSuccess } from "@/utils/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TripForm, formSchema } from "@/components/TripForm";
+import { useAuth } from "@/components/AuthProvider";
 
 const EditTrip = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { userRole } = useAuth();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
@@ -51,6 +53,7 @@ const EditTrip = () => {
           location: values.location,
           date: values.startDate.toISOString(),
           end_date: values.endDate.toISOString(),
+          last_edited_by: userRole,
         })
         .eq("id", id);
 

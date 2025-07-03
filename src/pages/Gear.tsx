@@ -12,6 +12,7 @@ import { Plus, Trash2, Edit, ImageOff, Search } from "lucide-react";
 import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toast";
 import { EmptyState } from "@/components/EmptyState";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/components/AuthProvider";
 
 const GearPage = () => {
   const [gear, setGear] = useState<Gear[]>([]);
@@ -173,13 +174,16 @@ const GearPage = () => {
                   </Badge>
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-end gap-2">
-                <Button variant="outline" size="icon" onClick={() => { setEditingGear(item); setIsDialogOpen(true); }}>
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button variant="destructive" size="icon" onClick={() => handleDelete(item)}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+              <CardFooter className="flex justify-between items-center">
+                <p className="text-xs text-muted-foreground">Last edited by: {item.last_edited_by || 'N/A'}</p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="icon" onClick={() => { setEditingGear(item); setIsDialogOpen(true); }}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="destructive" size="icon" onClick={() => handleDelete(item)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardFooter>
             </Card>
           ))}
@@ -190,6 +194,7 @@ const GearPage = () => {
 };
 
 const GearForm = ({ gearItem, onSave, onClose }: { gearItem: Gear | null; onSave: (gear: Gear) => void; onClose: () => void }) => {
+  const { userRole } = useAuth();
   const [name, setName] = useState(gearItem?.name || "");
   const [type, setType] = useState(gearItem?.type || "");
   const [quantity, setQuantity] = useState(gearItem?.quantity || 1);
@@ -232,6 +237,7 @@ const GearForm = ({ gearItem, onSave, onClose }: { gearItem: Gear | null; onSave
       condition,
       notes,
       photo_url,
+      last_edited_by: userRole,
       updated_at: new Date().toISOString(),
     };
 
